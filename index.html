@@ -484,59 +484,44 @@
                                 </div>
                             </div>
 
-                            <!-- Alérgicos -->
+                            <!-- Farmacológicos -->
                             <div class="accordion-item border rounded mb-2 overflow-hidden">
-                                <h2 class="accordion-header" id="headingAlergicos">
-                                    <button class="accordion-button collapsed py-2 px-3 fs-8 fw-semibold text-primary bg-sky-light shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAlergicos">
-                                        <i class="bi bi-virus me-2"></i>2. Alérgicos (AllergyIntolerance)
+                                <h2 class="accordion-header" id="headingFarmacos">
+                                    <button class="accordion-button collapsed py-2 px-3 fs-8 fw-semibold text-primary bg-sky-light shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFarmacos">
+                                        <i class="bi bi-capsule me-2"></i>2. Farmacológicos (Statement)
                                     </button>
                                 </h2>
-                                <div id="collapseAlergicos" class="accordion-collapse collapse" data-bs-parent="#accordionAntecedentes">
+                                <div id="collapseFarmacos" class="accordion-collapse collapse" data-bs-parent="#accordionAntecedentes">
                                     <div class="accordion-body bg-white p-2.5">
-                                        <div id="list-alergicos-existentes" class="mb-2.5 border-bottom pb-2" style="max-height: 120px; overflow-y: auto;">
+                                        <div id="list-farmacos-existentes" class="mb-2.5 border-bottom pb-2" style="max-height: 120px; overflow-y: auto;">
                                             <div class="text-muted fs-8.5 text-center">Cargando...</div>
                                         </div>
-                                        <form id="form-alergico" novalidate>
+                                        <form id="form-farmaco" novalidate>
                                             <div class="row g-2">
                                                 <div class="col-6">
-                                                    <label for="ale_tipo" class="form-label fs-9 mb-0">Tipo Alergia</label>
-                                                    <select class="form-select form-select-sm fs-8" id="ale_tipo">
-                                                        <option value="414285001" selected>Alergia alimentaria</option>
-                                                        <option value="416098002">Alergia a medicamentos</option>
-                                                        <option value="426232007">Alergia ambiental</option>
-                                                    </select>
+                                                    <label for="far_codigo" class="form-label fs-9 mb-0">Código SNOMED <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control form-control-sm fs-8" id="far_codigo" required placeholder="e.g. 376807003">
                                                 </div>
                                                 <div class="col-6">
-                                                    <label for="ale_codigo" class="form-label fs-9 mb-0">Código SNOMED <span class="text-danger">*</span></label>
-                                                    <input type="text" class="form-control form-control-sm fs-8" id="ale_codigo" required placeholder="e.g. 300916003">
-                                                </div>
-                                                <div class="col-12">
-                                                    <label for="ale_descripcion" class="form-label fs-9 mb-0">Sustancia / Alérgeno <span class="text-danger">*</span></label>
-                                                    <input type="text" class="form-control form-control-sm fs-8" id="ale_descripcion" required placeholder="e.g. Penicilina, Látex">
-                                                </div>
-                                                <div class="col-6">
-                                                    <label for="ale_estado" class="form-label fs-9 mb-0">Estado Clínico</label>
-                                                    <select class="form-select form-select-sm fs-8" id="ale_estado">
+                                                    <label for="far_estado" class="form-label fs-9 mb-0">Estado</label>
+                                                    <select class="form-select form-select-sm fs-8" id="far_estado">
                                                         <option value="active" selected>Active</option>
-                                                        <option value="inactive">Inactive</option>
-                                                        <option value="resolved">Resolved</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-6">
-                                                    <label for="ale_verif" class="form-label fs-9 mb-0">Verificación</label>
-                                                    <select class="form-select form-select-sm fs-8" id="ale_verif">
-                                                        <option value="confirmed" selected>Confirmed</option>
-                                                        <option value="unconfirmed">Unconfirmed</option>
-                                                        <option value="refuted">Refuted</option>
+                                                        <option value="completed">Completed</option>
+                                                        <option value="stopped">Stopped</option>
+                                                        <option value="entered-in-error">Entered in Error</option>
                                                     </select>
                                                 </div>
                                                 <div class="col-12">
-                                                    <label for="ale_observaciones" class="form-label fs-9 mb-0">Observaciones</label>
-                                                    <textarea class="form-control form-control-sm fs-8" id="ale_observaciones" rows="1" placeholder="Ej. Urticaria leve..."></textarea>
+                                                    <label for="far_descripcion" class="form-label fs-9 mb-0">Descripción <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control form-control-sm fs-8" id="far_descripcion" required placeholder="e.g. Losartán 50mg">
+                                                </div>
+                                                <div class="col-12">
+                                                    <label for="far_observaciones" class="form-label fs-9 mb-0">Observaciones</label>
+                                                    <textarea class="form-control form-control-sm fs-8" id="far_observaciones" rows="1" placeholder="Dosis, frecuencia..."></textarea>
                                                 </div>
                                                 <div class="col-12 mt-2">
                                                     <button type="submit" class="btn btn-sm btn-sky py-1 w-100 fs-8">
-                                                        <i class="bi bi-save me-1"></i>Guardar Alérgico
+                                                        <i class="bi bi-save me-1"></i>Guardar Fármaco
                                                     </button>
                                                 </div>
                                             </div>
@@ -562,11 +547,10 @@
                                                 <div class="col-6">
                                                     <label for="fam_parentesco" class="form-label fs-9 mb-0">Parentesco</label>
                                                     <select class="form-select form-select-sm fs-8" id="fam_parentesco">
-                                                        <option value="FTH" selected>Padre (Father)</option>
-                                                        <option value="MTH">Madre (Mother)</option>
-                                                        <option value="SIB">Hermano/a (Sibling)</option>
-                                                        <option value="GRFTH">Abuelo (Grandfather)</option>
-                                                        <option value="GRMTH">Abuela (Grandmother)</option>
+                                                        <option value="01" selected>Padre / Madre</option>
+                                                        <option value="02">Hermano / Hermana</option>
+                                                        <option value="03">Tío / Tía</option>
+                                                        <option value="04">Abuelo / Abuela</option>
                                                     </select>
                                                 </div>
                                                 <div class="col-6">
@@ -608,44 +592,62 @@
                                 </div>
                             </div>
 
-                            <!-- Farmacológicos -->
+                            <!-- Alérgicos -->
                             <div class="accordion-item border rounded mb-2 overflow-hidden">
-                                <h2 class="accordion-header" id="headingFarmacos">
-                                    <button class="accordion-button collapsed py-2 px-3 fs-8 fw-semibold text-primary bg-sky-light shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFarmacos">
-                                        <i class="bi bi-capsule me-2"></i>4. Farmacológicos (Statement)
+                                <h2 class="accordion-header" id="headingAlergicos">
+                                    <button class="accordion-button collapsed py-2 px-3 fs-8 fw-semibold text-primary bg-sky-light shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAlergicos">
+                                        <i class="bi bi-virus me-2"></i>4. Alérgicos (AllergyIntolerance)
                                     </button>
                                 </h2>
-                                <div id="collapseFarmacos" class="accordion-collapse collapse" data-bs-parent="#accordionAntecedentes">
+                                <div id="collapseAlergicos" class="accordion-collapse collapse" data-bs-parent="#accordionAntecedentes">
                                     <div class="accordion-body bg-white p-2.5">
-                                        <div id="list-farmacos-existentes" class="mb-2.5 border-bottom pb-2" style="max-height: 120px; overflow-y: auto;">
+                                        <div id="list-alergicos-existentes" class="mb-2.5 border-bottom pb-2" style="max-height: 120px; overflow-y: auto;">
                                             <div class="text-muted fs-8.5 text-center">Cargando...</div>
                                         </div>
-                                        <form id="form-farmaco" novalidate>
+                                        <form id="form-alergico" novalidate>
                                             <div class="row g-2">
                                                 <div class="col-6">
-                                                    <label for="far_codigo" class="form-label fs-9 mb-0">Código SNOMED <span class="text-danger">*</span></label>
-                                                    <input type="text" class="form-control form-control-sm fs-8" id="far_codigo" required placeholder="e.g. 376807003">
+                                                    <label for="ale_tipo" class="form-label fs-9 mb-0">Tipo Alergia</label>
+                                                    <select class="form-select form-select-sm fs-8" id="ale_tipo">
+                                                        <option value="02" selected>Alimento</option>
+                                                        <option value="01">Medicamento</option>
+                                                        <option value="03">Sustancia del ambiente</option>
+                                                        <option value="04">Sustancia de contacto con piel</option>
+                                                        <option value="05">Picadura de insecto</option>
+                                                        <option value="06">Otra</option>
+                                                    </select>
                                                 </div>
                                                 <div class="col-6">
-                                                    <label for="far_estado" class="form-label fs-9 mb-0">Estado</label>
-                                                    <select class="form-select form-select-sm fs-8" id="far_estado">
+                                                    <label for="ale_codigo" class="form-label fs-9 mb-0">Código SNOMED <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control form-control-sm fs-8" id="ale_codigo" required maxlength="50" placeholder="e.g. 300916003">
+                                                </div>
+                                                <div class="col-12">
+                                                    <label for="ale_descripcion" class="form-label fs-9 mb-0">Sustancia / Alérgeno <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control form-control-sm fs-8" id="ale_descripcion" required maxlength="255" placeholder="e.g. Penicilina, Látex">
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="ale_estado" class="form-label fs-9 mb-0">Estado Clínico</label>
+                                                    <select class="form-select form-select-sm fs-8" id="ale_estado">
                                                         <option value="active" selected>Active</option>
-                                                        <option value="completed">Completed</option>
-                                                        <option value="stopped">Stopped</option>
-                                                        <option value="entered-in-error">Entered in Error</option>
+                                                        <option value="inactive">Inactive</option>
+                                                        <option value="resolved">Resolved</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="ale_verif" class="form-label fs-9 mb-0">Verificación</label>
+                                                    <select class="form-select form-select-sm fs-8" id="ale_verif">
+                                                        <option value="confirmed" selected>Confirmed</option>
+                                                        <option value="unconfirmed">Unconfirmed</option>
+                                                        <option value="refuted">Refuted</option>
                                                     </select>
                                                 </div>
                                                 <div class="col-12">
-                                                    <label for="far_descripcion" class="form-label fs-9 mb-0">Descripción <span class="text-danger">*</span></label>
-                                                    <input type="text" class="form-control form-control-sm fs-8" id="far_descripcion" required placeholder="e.g. Losartán 50mg">
-                                                </div>
-                                                <div class="col-12">
-                                                    <label for="far_observaciones" class="form-label fs-9 mb-0">Observaciones</label>
-                                                    <textarea class="form-control form-control-sm fs-8" id="far_observaciones" rows="1" placeholder="Dosis, frecuencia..."></textarea>
+                                                    <label for="ale_observaciones" class="form-label fs-9 mb-0">Observaciones</label>
+                                                    <textarea class="form-control form-control-sm fs-8" id="ale_observaciones" rows="1" maxlength="100" placeholder="Ej. Urticaria leve..."></textarea>
                                                 </div>
                                                 <div class="col-12 mt-2">
                                                     <button type="submit" class="btn btn-sm btn-sky py-1 w-100 fs-8">
-                                                        <i class="bi bi-save me-1"></i>Guardar Fármaco
+                                                        <i class="bi bi-save me-1"></i>Guardar Alérgico
                                                     </button>
                                                 </div>
                                             </div>

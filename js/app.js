@@ -670,14 +670,14 @@ class FormHandler {
         this.executeFormAction('#form-patologico', '#panel-antecedentes-card', async () => {
             const payload = {
                 id_pcnte: pacienteId,
-                cie_10: $('#pat_cie10').val().trim() || null,
-                cie_11: $('#pat_cie11').val().trim() || null,
-                codigo: $('#pat_codigo').val().trim() || null,
-                edad_diagnostico: $('#pat_edad').val() !== '' ? parseInt($('#pat_edad').val(), 10) : null,
-                descripcion: $('#pat_descripcion').val().trim(),
-                estado: $('#pat_estado').val(),
-                estado_verificacion: $('#pat_verif').val(),
-                observaciones: $('#pat_observaciones').val().trim() || null
+                cie_10: $('#pat_cie10').length ? ($('#pat_cie10').val() || '').trim() || null : null,
+                cie_11: $('#pat_cie11').length ? ($('#pat_cie11').val() || '').trim() || null : null,
+                codigo: $('#pat_codigo').length ? ($('#pat_codigo').val() || '').trim() || null : null,
+                edad_diagnostico: ($('#pat_edad').length && $('#pat_edad').val() !== '' && $('#pat_edad').val() !== undefined) ? parseInt($('#pat_edad').val(), 10) : null,
+                descripcion: $('#pat_descripcion').length ? ($('#pat_descripcion').val() || '').trim() : '',
+                estado: $('#pat_estado').length ? $('#pat_estado').val() : null,
+                estado_verificacion: $('#pat_verif').length ? $('#pat_verif').val() : null,
+                observaciones: $('#pat_observaciones').length ? ($('#pat_observaciones').val() || '').trim() || null : null
             };
 
             const response = await this.api.request('createCondition.php', 'POST', payload);
@@ -699,12 +699,12 @@ class FormHandler {
         this.executeFormAction('#form-alergico', '#panel-antecedentes-card', async () => {
             const payload = {
                 id_pcnte: pacienteId,
-                tipoalergia: $('#ale_tipo').val(),
-                codigo: $('#ale_codigo').val().trim() || null,
-                descripcion: $('#ale_descripcion').val().trim(),
-                estado: $('#ale_estado').val(),
-                estado_verificacion: $('#ale_verif').val(),
-                observaciones: $('#ale_observaciones').val().trim() || null
+                tipoalergia: $('#ale_tipo').length ? $('#ale_tipo').val() : null,
+                codigo: $('#ale_codigo').length ? ($('#ale_codigo').val() || '').trim() || null : null,
+                descripcion: $('#ale_descripcion').length ? ($('#ale_descripcion').val() || '').trim() : '',
+                estado: $('#ale_estado').length ? $('#ale_estado').val() : null,
+                estado_verificacion: $('#ale_verif').length ? $('#ale_verif').val() : null,
+                observaciones: $('#ale_observaciones').length ? ($('#ale_observaciones').val() || '').trim() || null : null
             };
 
             const response = await this.api.request('createAllergyIntolerance.php', 'POST', payload);
@@ -726,14 +726,14 @@ class FormHandler {
         this.executeFormAction('#form-familiar', '#panel-antecedentes-card', async () => {
             const payload = {
                 id_pcnte: pacienteId,
-                parentesco: $('#fam_parentesco').val(),
-                cie_10: $('#fam_cie10').val().trim() || null,
-                cie_11: $('#fam_cie11').val().trim() || null,
-                codigo: $('#fam_codigo').val().trim() || null,
-                descripcion: $('#fam_descripcion').val().trim(),
-                estado: $('#fam_estado').val(),
-                edad_diagnostico: $('#fam_edad').val() !== '' ? parseInt($('#fam_edad').val(), 10) : null,
-                observaciones: $('#fam_observaciones').val().trim() || null
+                parentesco: $('#fam_parentesco').length ? $('#fam_parentesco').val() : null,
+                cie_10: $('#fam_cie10').length ? ($('#fam_cie10').val() || '').trim() || null : null,
+                cie_11: $('#fam_cie11').length ? ($('#fam_cie11').val() || '').trim() || null : null,
+                codigo: $('#fam_codigo').length ? ($('#fam_codigo').val() || '').trim() || null : null,
+                descripcion: $('#fam_descripcion').length ? ($('#fam_descripcion').val() || '').trim() : '',
+                estado: $('#fam_estado').length ? $('#fam_estado').val() : null,
+                edad_diagnostico: ($('#fam_edad').length && $('#fam_edad').val() !== '' && $('#fam_edad').val() !== undefined) ? parseInt($('#fam_edad').val(), 10) : null,
+                observaciones: $('#fam_observaciones').length ? ($('#fam_observaciones').val() || '').trim() || null : null
             };
 
             const response = await this.api.request('createFamilyMemberHistory.php', 'POST', payload);
@@ -755,10 +755,10 @@ class FormHandler {
         this.executeFormAction('#form-farmaco', '#panel-antecedentes-card', async () => {
             const payload = {
                 id_pcnte: pacienteId,
-                codigo: $('#far_codigo').val().trim() || null,
-                descripcion: $('#far_descripcion').val().trim(),
-                estado: $('#far_estado').val(),
-                observaciones: $('#far_observaciones').val().trim() || null
+                codigo: $('#far_codigo').length ? ($('#far_codigo').val() || '').trim() || null : null,
+                descripcion: $('#far_descripcion').length ? ($('#far_descripcion').val() || '').trim() : '',
+                estado: $('#far_estado').length ? $('#far_estado').val() : null,
+                observaciones: $('#far_observaciones').length ? ($('#far_observaciones').val() || '').trim() || null : null
             };
 
             const response = await this.api.request('createMedicationStatement.php', 'POST', payload);
