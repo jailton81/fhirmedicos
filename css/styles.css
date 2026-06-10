@@ -1,0 +1,588 @@
+/* =========================================================================
+   GESALUD - Portal de Médicos Minimalist Sky Blue Theme
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-color: #f3f9fc;
+    --text-primary: #1e3545;
+    --text-secondary: #5a738e;
+    --sky-primary: #3fa9f5;
+    --sky-hover: #1b8adb;
+    --sky-light: #e6f4fd;
+    --card-bg: #ffffff;
+    --border-color: #d8e8f4;
+    --shadow-sm: 0 4px 6px rgba(63, 169, 245, 0.04);
+    --shadow-md: 0 10px 25px rgba(63, 169, 245, 0.08);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+/* Base Form Styling & Layout */
+.app-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.portal-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 480px;
+    transition: var(--transition-smooth);
+}
+
+.portal-card-lg {
+    max-width: 960px;
+}
+
+/* Brand and Header */
+.brand-logo {
+    color: var(--sky-primary);
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.brand-dot {
+    color: var(--text-primary);
+}
+
+/* Inputs and Forms styling */
+.form-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    border: 1.5px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    background-color: #fff;
+    transition: var(--transition-smooth);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--sky-primary);
+    box-shadow: 0 0 0 4px rgba(63, 169, 245, 0.15);
+    outline: none;
+}
+
+.form-control::placeholder {
+    color: #a0b6cd;
+}
+
+/* Buttons */
+.btn-sky {
+    background-color: var(--sky-primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.7rem 1.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-sky:hover, .btn-sky:focus {
+    background-color: var(--sky-hover);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.btn-sky:active {
+    transform: translateY(1px);
+}
+
+.btn-sky-outline {
+    background-color: transparent;
+    color: var(--sky-primary);
+    border: 1.5px solid var(--sky-primary);
+    border-radius: 8px;
+    padding: 0.6rem 1.4rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: var(--transition-smooth);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-sky-outline:hover, .btn-sky-outline:focus {
+    background-color: var(--sky-light);
+    color: var(--sky-hover);
+    border-color: var(--sky-hover);
+}
+
+/* Toast System (DRY/Reusable UI) */
+.toast-container {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 1060;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.medico-toast {
+    min-width: 300px;
+    max-width: 400px;
+    background: #fff;
+    border-left: 4px solid var(--sky-primary);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: slideIn 0.3s ease forwards;
+}
+
+.medico-toast.toast-danger {
+    border-left-color: #ff5252;
+}
+
+.medico-toast.toast-success {
+    border-left-color: #2ecc71;
+}
+
+.toast-message {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    to { transform: translateY(-10px); opacity: 0; }
+}
+
+/* Navigation Layout */
+.dashboard-nav {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    padding: 0.4rem 0;
+}
+
+.dashboard-layout {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Loading Spinner Overlay */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition-smooth);
+    z-index: 10;
+    border-radius: inherit;
+}
+
+.loading-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.spinner-sky {
+    color: var(--sky-primary);
+}
+
+/* Lock Card for Password Change View */
+.lock-banner {
+    background-color: var(--sky-light);
+    color: var(--sky-hover);
+    border: 1px dashed var(--sky-primary);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Appointment Card Hover Micro-animations */
+.appointment-card {
+    transition: var(--transition-smooth);
+}
+.appointment-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(63, 169, 245, 0.12) !important;
+}
+
+/* Compact Tabular Agenda Styles */
+.compact-agenda-table {
+    border-collapse: separate;
+    border-spacing: 0 0.4rem;
+}
+.compact-agenda-table tbody tr {
+    transition: var(--transition-smooth);
+    cursor: pointer;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+}
+.compact-agenda-table tbody tr td {
+    padding: 0.6rem 0.75rem;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    background-color: #ffffff;
+}
+.compact-agenda-table tbody tr td:first-child {
+    border-left: 1px solid var(--border-color);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+.compact-agenda-table tbody tr td:last-child {
+    border-right: 1px solid var(--border-color);
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.compact-agenda-table tbody tr:hover td {
+    background-color: #f8fcff !important;
+}
+
+/* Active Consultation Highlight (Premium subtle blue background and indicator bar) */
+.compact-agenda-table tbody tr.table-active-consultation td {
+    background-color: #f0f7ff !important;
+    border-top-color: rgba(63, 169, 245, 0.4);
+    border-bottom-color: rgba(63, 169, 245, 0.4);
+}
+.compact-agenda-table tbody tr.table-active-consultation td:first-child {
+    border-left: 4px solid var(--sky-primary) !important;
+}
+.compact-agenda-table tbody tr.table-active-consultation td:last-child {
+    border-right-color: rgba(63, 169, 245, 0.4);
+}
+
+.fs-7 {
+    font-size: 0.9rem;
+}
+.fs-7.5 {
+    font-size: 0.8rem;
+}
+.fs-8 {
+    font-size: 0.77rem;
+}
+.fs-8.5 {
+    font-size: 0.85rem;
+}
+.fs-9.5 {
+    font-size: 0.67rem;
+}
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+}
+
+/* FHIR Resource Viewer (Sleek Dark Slate Theme) */
+.fhir-resource-viewer pre {
+    background-color: #0f172a; /* Slate 900 */
+    color: #38bdf8; /* Light sky blue */
+    padding: 1.25rem;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.8rem;
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid #1e293b;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+.fhir-resource-viewer code {
+    color: inherit;
+}
+
+/* Rediseño Ejecutivo / Clínico Moderno */
+.kpi-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
+}
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+.kpi-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    min-width: 38px;
+}
+.kpi-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text-primary);
+}
+.kpi-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Custom mini states */
+.bg-sky-pale {
+    background-color: #e6f4fd;
+    color: #0d83dd;
+}
+.bg-success-pale {
+    background-color: #e8f8f0;
+    color: #27ae60;
+}
+.bg-warning-pale {
+    background-color: #fef8eb;
+    color: #f39c12;
+}
+.bg-danger-pale {
+    background-color: #fdedec;
+    color: #e74c3c;
+}
+.bg-purple-pale {
+    background-color: #f5eef8;
+    color: #8e44ad;
+}
+
+/* Sidebar mini cards */
+.sidebar-mini-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    transition: var(--transition-smooth);
+}
+.sidebar-mini-card:hover {
+    border-color: var(--sky-primary);
+    background-color: #fcfdfe;
+}
+.sidebar-mini-icon {
+    font-size: 1.1rem;
+    color: var(--sky-primary);
+}
+
+/* Accordion clinical customizations */
+.accordion-item {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+.accordion-button {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+}
+.accordion-button:not(.collapsed) {
+    background-color: var(--sky-light) !important;
+    color: var(--sky-hover) !important;
+    box-shadow: none !important;
+}
+.accordion-button:focus {
+    box-shadow: none !important;
+    border-color: var(--border-color) !important;
+}
+.clinical-modal-table {
+    font-size: 0.8rem;
+}
+.clinical-modal-table th {
+    background-color: #f8fafc;
+    font-weight: 600;
+}
+.form-section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--sky-hover);
+    border-bottom: 1.5px solid var(--border-color);
+    padding-bottom: 0.25rem;
+}
+.fs-9 {
+    font-size: 0.72rem;
+}
+
+/* =========================================================================
+   CLINICAL ATTENTION PANEL (SPLIT-SCREEN 3 COLUMNS)
+   ========================================================================= */
+
+#view-clinical-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#view-clinical-panel .container-fluid {
+    height: calc(100vh - 36px);
+}
+
+.scroll-independent {
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.text-ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Hover effects for clinical rows */
+.clinical-list-row {
+    transition: var(--transition-smooth);
+    border-left: 2px solid transparent;
+}
+.clinical-list-row:hover {
+    background-color: #f8fafc;
+    border-left-color: var(--sky-primary);
+}
+
+/* Badges and alerts */
+.alert-badge {
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+.alert-badge-danger {
+    background-color: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fca5a5;
+}
+
+/* Timeline component */
+.timeline-feed {
+    position: relative;
+    padding-left: 1.25rem;
+    border-left: 2px solid #e2e8f0;
+    margin-left: 0.4rem;
+}
+.timeline-item {
+    position: relative;
+    margin-bottom: 1rem;
+}
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: calc(-1.25rem - 6px);
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--sky-primary);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px var(--sky-light);
+}
+.timeline-date {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.timeline-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.15rem;
+}
+.timeline-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Autocomplete results list */
+#search-cie10-dropdown {
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    z-index: 1050;
+    box-shadow: var(--shadow-md);
+}
+#search-cie10-dropdown .list-group-item {
+    cursor: pointer;
+    font-size: 0.78rem;
+    padding: 0.5rem 0.75rem;
+    transition: var(--transition-smooth);
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+}
+#search-cie10-dropdown .list-group-item:last-child {
+    border-bottom: none;
+}
+#search-cie10-dropdown .list-group-item:hover {
+    background-color: var(--sky-light);
+    color: var(--sky-hover);
+}
+
+
+
+
+
+
