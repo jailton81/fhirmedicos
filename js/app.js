@@ -552,6 +552,7 @@ class FormHandler {
     async loadConditions(pacienteId) {
         try {
             const res = await this.api.request(`getCondition.php?id_pcnte=${pacienteId}`, 'GET');
+            this.currentConditions = res.data || [];
             const sideContainer = $('#list-patologicos-existentes');
             sideContainer.empty();
 
@@ -579,6 +580,7 @@ class FormHandler {
     async loadAllergies(pacienteId) {
         try {
             const res = await this.api.request(`getAllergyIntolerance.php?id_pcnte=${pacienteId}`, 'GET');
+            this.currentAllergies = res.data || [];
             const sideContainer = $('#list-alergicos-existentes');
             sideContainer.empty();
 
@@ -606,6 +608,7 @@ class FormHandler {
     async loadFamilyHistory(pacienteId) {
         try {
             const res = await this.api.request(`getFamilyMemberHistory.php?id_pcnte=${pacienteId}`, 'GET');
+            this.currentFamilyHistory = res.data || [];
             const sideContainer = $('#list-familiares-existentes');
             sideContainer.empty();
 
@@ -633,6 +636,7 @@ class FormHandler {
     async loadMedications(pacienteId) {
         try {
             const res = await this.api.request(`getMedicationStatement.php?id_pcnte=${pacienteId}`, 'GET');
+            this.currentMedications = res.data || [];
             const sideContainer = $('#list-farmacos-existentes');
             sideContainer.empty();
 
@@ -685,6 +689,7 @@ class FormHandler {
                 this.ui.showToast('Antecedente patológico guardado exitosamente.', 'success');
                 $('#form-patologico')[0].reset();
                 await this.loadConditions(pacienteId);
+                this.updateSmartClinicalSummary($('#panel-pat-age').text(), $('#panel-pat-gender').text());
             } else {
                 throw new Error(response.message || 'Error al guardar antecedente patológico.');
             }
@@ -712,6 +717,7 @@ class FormHandler {
                 this.ui.showToast('Antecedente alérgico guardado exitosamente.', 'success');
                 $('#form-alergico')[0].reset();
                 await this.loadAllergies(pacienteId);
+                this.updateSmartClinicalSummary($('#panel-pat-age').text(), $('#panel-pat-gender').text());
             } else {
                 throw new Error(response.message || 'Error al guardar antecedente alérgico.');
             }
@@ -741,6 +747,7 @@ class FormHandler {
                 this.ui.showToast('Antecedente familiar guardado exitosamente.', 'success');
                 $('#form-familiar')[0].reset();
                 await this.loadFamilyHistory(pacienteId);
+                this.updateSmartClinicalSummary($('#panel-pat-age').text(), $('#panel-pat-gender').text());
             } else {
                 throw new Error(response.message || 'Error al guardar antecedente familiar.');
             }
@@ -766,10 +773,75 @@ class FormHandler {
                 this.ui.showToast('Antecedente farmacológico guardado exitosamente.', 'success');
                 $('#form-farmaco')[0].reset();
                 await this.loadMedications(pacienteId);
+                this.updateSmartClinicalSummary($('#panel-pat-age').text(), $('#panel-pat-gender').text());
             } else {
                 throw new Error(response.message || 'Error al guardar antecedente farmacológico.');
             }
         });
+    }
+
+    updateSmartClinicalSummary(ageText, genderText) {
+        const name = this.currentPatientName || 'El paciente';
+        const conditions = this.currentConditions || [];
+        const allergies = this.currentAllergies || [];
+        const medications = this.currentMedications || [];
+
+        let summaryParts = [];
+        summaryParts.push(`<strong>${name}</strong> es un paciente de <strong>${ageText}</strong> de sexo <strong>${genderText}</strong>.`);
+
+        if (conditions.length > 0) {
+            const activeConditions = conditions.map(c => c.descripcion).join(', ');
+            summaryParts.push(`Presenta antecedentes de: <span class="text-primary fw-semibold">${activeConditions}</span>.`);
+        } else {
+            summaryParts.push(`No se registran antecedentes patológicos activos en el sistema.`);
+        }
+
+        if (medications.length > 0) {
+            const activeMeds = medications.map(m => m.descripcion).join(', ');
+            summaryParts.push(`Actualmente bajo tratamiento con: <span class="text-success fw-semibold">${activeMeds}</span>.`);
+        }
+
+        if (allergies.length > 0) {
+            const activeAllergies = allergies.map(a => `${a.descripcion} (${a.tipo_alergia_nombre || 'Alergia'})`).join(', ');
+            summaryParts.push(`<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Alerta de Alergias:</span> El paciente es sensible a: <strong class="text-danger">${activeAllergies}</strong>.`);
+        } else {
+            summaryParts.push(`Sin reporte de alergias conocidas o intolerancias.`);
+        }
+
+        $('#smart-clinical-summary-text').html(summaryParts.join(' '));
+
+        const badgesContainer = $('#smart-clinical-summary-badges');
+        badgesContainer.empty();
+
+        if (allergies.length > 0) {
+            badgesContainer.append(`<span class="risk-tag-badge risk-tag-red"><i class="bi bi-virus me-1"></i>Alérgeno Crítico</span>`);
+        }
+        if (conditions.length > 0) {
+            badgesContainer.append(`<span class="risk-tag-badge risk-tag-orange"><i class="bi bi-heart-pulse me-1"></i>Patología Activa</span>`);
+        }
+        if (medications.length > 0) {
+            badgesContainer.append(`<span class="risk-tag-badge risk-tag-yellow"><i class="bi bi-capsule me-1"></i>Farmacoterapia</span>`);
+        }
+        if (allergies.length === 0 && conditions.length === 0) {
+            badgesContainer.append(`<span class="risk-tag-badge" style="background-color: #d1fae5 !important; color: #065f46 !important;"><i class="bi bi-shield-check me-1"></i>Bajo Riesgo</span>`);
+        }
+    }
+
+    formatMockupDate(dateStr) {
+        if (!dateStr) return 'Fecha N/A';
+        try {
+            const parts = dateStr.split(' ')[0].split('-');
+            const year = parts[0];
+            const monthNum = parseInt(parts[1], 10);
+            const day = parts[2];
+            
+            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            const monthName = months[monthNum - 1] || 'N/A';
+            
+            return `${day} ${monthName} ${year}`;
+        } catch (e) {
+            return dateStr;
+        }
     }
 
     async loadClinicalPanel(pacienteId, pacienteName, epsName, epsNit) {
@@ -779,6 +851,15 @@ class FormHandler {
         // Switch to clinical panel view
         this.ui.switchView('clinical-panel');
 
+        // Reset sidebar active tab to overview
+        $('#clinical-sidebar-menu .nav-link').removeClass('active');
+        $('#clinical-sidebar-menu .nav-link[data-tab="overview"]').addClass('active');
+        $('.clinical-tab-content').addClass('d-none');
+        $('#tab-overview').removeClass('d-none');
+
+        // Show patient active care navigation button in navbar
+        $('.btn-nav-atencion').removeClass('d-none');
+
         // Set doctor name in uniform navbar from session
         const user = this.storage.getUser();
         if (user) {
@@ -786,18 +867,12 @@ class FormHandler {
             $('#panel-medico-name').text(doctorName);
         }
 
-        // Set EPS/Aseguradora & Patient info
-        $('#panel-eps-name').text(epsName);
-        $('#panel-eps-nit').text(epsNit);
-        $('#panel-pat-name').text(pacienteName);
-        $('#panel-pat-id').text(pacienteId);
-        $('#panel-pat-type-id').text('CC');
-        $('#panel-pat-age').text('-- años');
-        $('#panel-pat-gender').text('Cargando...');
-        $('#panel-pat-occupation').text('Cargando...');
+        // Set patient basic info in sidebar and workspace header
+        $('#sidebar-patient-name').text(`${pacienteName}, --`);
+        $('#sidebar-patient-id').text(pacienteId);
+        $('#panel-patient-title-name').text(`Patient Overview - ${pacienteName}`);
 
         // Set loading states
-        $('#panel-patient-summary').html(`<span class="spinner-border spinner-border-sm text-primary me-2"></span>Cargando datos del paciente...`);
         if ($('#panel-timeline-container').length > 0) {
             $('#panel-timeline-container').html('<div class="text-muted fs-8 text-center py-3"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Cargando histórico...</div>');
         }
@@ -807,6 +882,7 @@ class FormHandler {
         $('#selected-cie10-code').text('CIE-10');
         $('#selected-cie10-description').text('Ningún diagnóstico seleccionado');
         $('#evo_diagnostico').val('');
+        $('.vital-input-card').removeClass('vital-alert-danger vital-alert-warning vital-alert-success');
 
         try {
             // Load Patient demographics (gender, birthdate) and calculate age
@@ -827,7 +903,6 @@ class FormHandler {
             let idType = 'CC';
             let idNumber = pacienteId;
             let patientFullName = pacienteName;
-            let occupationText = 'No declarada';
 
             if (resPatient && !resPatient.error && resPatient.status === 'success' && resPatient.data && resPatient.data.length > 0) {
                 const patientObj = resPatient.data[0];
@@ -848,9 +923,6 @@ class FormHandler {
                     genderText = patientObj.genero_fhir === 'female' ? 'Femenino' : 'Masculino';
                 }
 
-                // Occupation
-                occupationText = patientObj.ocupacion || 'No declarada';
-
                 // Birthdate / Age
                 const bDateStr = patientObj.fecha_nacimiento;
                 if (bDateStr) {
@@ -865,16 +937,20 @@ class FormHandler {
                 }
             }
             
-            // Set the values to the UI Card
-            $('#panel-pat-name').text(patientFullName);
-            $('#panel-pat-type-id').text(idType);
-            $('#panel-pat-id').text(idNumber);
-            $('#panel-pat-age').text(ageText);
-            $('#panel-pat-gender').text(genderText);
-            $('#panel-pat-occupation').text(occupationText).attr('title', occupationText);
+            // Set values to the sidebar Patient Profile & Title Header
+            $('#sidebar-patient-name').text(`${patientFullName}, ${ageText.replace(' años', '')}`);
+            $('#sidebar-patient-id').text(idNumber);
+            $('#panel-patient-title-name').text(`Patient Overview - ${patientFullName}`);
+
+            // Dynamic patient avatar
+            let avatarUrl = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'; // Alice Vance style female
+            if (genderText.toLowerCase().includes('masculino') || genderText.toLowerCase().includes('male')) {
+                avatarUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'; // male
+            }
+            $('#sidebar-patient-avatar').attr('src', avatarUrl);
             
-            // Set patient summary header line
-            $('#panel-patient-summary').html(`<strong>${patientFullName}</strong> &bull; ${idType} ${idNumber} &bull; ${ageText} &bull; ${genderText}`);
+            // Update Smart Clinical Summary Card
+            this.updateSmartClinicalSummary(ageText, genderText);
 
             // 5. Process Timeline & Latest Vital Signs (Only if container exists in DOM)
             const timelineContainer = $('#panel-timeline-container');
@@ -886,37 +962,61 @@ class FormHandler {
                     const sorted = resTimeline.data.sort((a,b) => parseInt(b.cnsctvo_pcnte) - parseInt(a.cnsctvo_pcnte));
                     const latest = sorted[0];
 
-                    $('#hist-vitals-ta').text(latest.prsion_artrial || '--');
-                    $('#hist-vitals-fc').text(latest.frcncia_crdca ? latest.frcncia_crdca + ' lpm' : '--');
-                    $('#hist-vitals-fr').text(latest.frcncia_rsprtria ? latest.frcncia_rsprtria + ' rpm' : '--');
-                    $('#hist-vitals-spo2').text(latest.plso ? latest.plso + '%' : '--');
-                    $('#hist-vitals-temp').text(latest.tmprtra ? latest.tmprtra + '°C' : '--');
+                    $('#prev-vital-ta').text(latest.prsion_artrial || '--');
+                    $('#prev-vital-fc').text(latest.frcncia_crdca || '--');
+                    $('#prev-vital-fr').text(latest.frcncia_rsprtria || '--');
+                    $('#prev-vital-spo2').text(latest.plso || '--');
+                    $('#prev-vital-temp').text(latest.tmprtra || '--');
+                    $('#prev-vital-peso').text(latest.pso || '--');
+                    $('#prev-vital-tlla').text(latest.tlla || '--');
 
-                    // Render Timeline Feed
-                    const timelineFeed = $('<div class="timeline-feed"></div>');
-                    sorted.forEach(item => {
+                    // Set Vitals in left sidebar block
+                    $('#sidebar-vital-bp').text(latest.prsion_artrial || '--');
+                    $('#sidebar-vital-hr').text(latest.frcncia_crdca || '--');
+                    $('#sidebar-vital-temp').text(latest.tmprtra ? `${parseFloat(latest.tmprtra).toFixed(1)}C` : '--');
+
+                    // Render Timeline Feed (MEDNET Mockup Style)
+                    const timelineFeed = $('<div class="timeline-mock-feed"></div>');
+                    sorted.forEach((item, index) => {
+                        const isLatest = index === 0;
+                        const dateFormatted = this.formatMockupDate(item.fcha_aprtra);
+                        
                         timelineFeed.append(`
-                            <div class="timeline-item">
-                                <div class="timeline-date">${item.fcha_aprtra || 'Fecha N/A'} | Evolución #${item.cnsctvo_pcnte}</div>
-                                <div class="timeline-title text-ellipsis" title="${item.mtvo}">${item.mtvo}</div>
-                                <div class="timeline-desc text-muted line-clamp-2" title="${item.evlcion}">${item.evlcion}</div>
-                                <div class="mt-1 fs-9 text-secondary font-monospace">Efectuado por Dr. ID: ${item.id_mdco}</div>
+                            <div class="timeline-mock-item">
+                                <div class="timeline-mock-date-pill ${isLatest ? 'latest' : 'past'}">
+                                    ${dateFormatted}
+                                </div>
+                                <div class="timeline-mock-node ${isLatest ? 'latest' : ''}"></div>
+                                <div class="timeline-mock-card">
+                                    <div class="timeline-mock-header">
+                                        Visit: ${item.mtvo || 'Consulta General'}, Diagnosis: ${item.diagnostico_definitivo || 'Pendiente'}
+                                    </div>
+                                    <div class="timeline-mock-note">
+                                        Dr. ${item.id_mdco || 'Médico'}: "${item.evlcion || 'Sin observaciones.'}"
+                                    </div>
+                                </div>
                             </div>
                         `);
                     });
                     timelineContainer.append(timelineFeed);
                 } else {
-                    // Reset vital signs text
-                    $('#hist-vitals-ta').text('--');
-                    $('#hist-vitals-fc').text('--');
-                    $('#hist-vitals-fr').text('--');
-                    $('#hist-vitals-spo2').text('--');
-                    $('#hist-vitals-temp').text('--');
+                    // Reset vital signs text hints
+                    $('#prev-vital-ta').text('--');
+                    $('#prev-vital-fc').text('--');
+                    $('#prev-vital-fr').text('--');
+                    $('#prev-vital-spo2').text('--');
+                    $('#prev-vital-temp').text('--');
+                    $('#prev-vital-peso').text('--');
+                    $('#prev-vital-tlla').text('--');
+
+                    // Reset sidebar vitals
+                    $('#sidebar-vital-bp').text('--');
+                    $('#sidebar-vital-hr').text('--');
+                    $('#sidebar-vital-temp').text('--');
+
                     timelineContainer.html('<div class="text-muted fs-8 text-center py-3">No hay historial de atenciones clínicas.</div>');
                 }
             }
-
-
 
         } catch (error) {
             console.error("Error al cargar el panel clínico:", error);
@@ -1050,6 +1150,9 @@ class App {
         $('#btn-logout, #btn-logout-panel').on('click', (e) => {
             e.preventDefault();
             this.storage.clearSession();
+            this.formHandler.currentPatientId = null;
+            this.formHandler.currentPatientName = null;
+            $('.btn-nav-atencion').addClass('d-none');
             this.ui.showToast('Sesión cerrada correctamente.', 'info');
             this.ui.switchView('login');
             $('#form-login')[0].reset();
@@ -1097,8 +1200,8 @@ class App {
             await this.formHandler.loadClinicalPanel(pacienteId, pacienteName, epsName, epsNit);
         });
 
-        // Volver al Dashboard
-        $('#btn-back-to-dash').on('click', (e) => {
+        // Volver al Dashboard desde el menú (visible en todas las páginas)
+        $(document).on('click', '.btn-nav-dashboard', (e) => {
             e.preventDefault();
             this.ui.switchView('dashboard');
         });
@@ -1189,6 +1292,66 @@ class App {
         // Formulario de Evolución Diaria (Firmar y Evolucionar)
         $('#form-evolucion-diaria').on('submit', (e) => this.formHandler.firmarEvolucion(e));
 
+        // Botón de navegación "Atención Activa"
+        $(document).on('click', '.btn-nav-atencion', (e) => {
+            e.preventDefault();
+            const activeId = this.formHandler.currentPatientId;
+            if (activeId) {
+                this.ui.switchView('clinical-panel');
+            }
+        });
+
+        // Alertas dinámicas de signos vitales (Temperatura)
+        $('#evo_tmprtra').on('input', function() {
+            const val = parseFloat($(this).val());
+            const card = $(this).closest('.vital-input-card');
+            card.removeClass('vital-alert-danger vital-alert-warning vital-alert-success');
+            if (!isNaN(val)) {
+                if (val < 35.0 || val > 38.0) {
+                    card.addClass('vital-alert-danger');
+                } else if ((val >= 35.0 && val <= 35.9) || (val >= 37.6 && val <= 38.0)) {
+                    card.addClass('vital-alert-warning');
+                } else {
+                    card.addClass('vital-alert-success');
+                }
+            }
+        });
+
+        // Alertas dinámicas de signos vitales (SPO2 / Oxígeno)
+        $('#evo_plso').on('input', function() {
+            const val = parseFloat($(this).val());
+            const card = $(this).closest('.vital-input-card');
+            card.removeClass('vital-alert-danger vital-alert-warning vital-alert-success');
+            if (!isNaN(val)) {
+                if (val < 90) {
+                    card.addClass('vital-alert-danger');
+                } else if (val >= 90 && val <= 94) {
+                    card.addClass('vital-alert-warning');
+                } else {
+                    card.addClass('vital-alert-success');
+                }
+            }
+        });
+
+        // Cambio de pestaña en el menú lateral (Mockup Tab View)
+        $(document).on('click', '.btn-sidebar-tab', (e) => {
+            e.preventDefault();
+            const tabId = $(e.currentTarget).data('tab');
+            
+            if (tabId === 'patients') {
+                // Volver al Dashboard
+                this.ui.switchView('dashboard');
+                return;
+            }
+
+            // Cambiar pestaña activa en el menú
+            $('#clinical-sidebar-menu .nav-link').removeClass('active');
+            $(e.currentTarget).addClass('active');
+
+            // Mostrar la sección correspondiente
+            $('.clinical-tab-content').addClass('d-none');
+            $(`#tab-${tabId}`).removeClass('d-none');
+        });
 
     }
 

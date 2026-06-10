@@ -2,24 +2,24 @@
    GESALUD - Portal de Médicos Minimalist Sky Blue Theme
    ========================================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --bg-color: #f3f9fc;
-    --text-primary: #1e3545;
-    --text-secondary: #5a738e;
-    --sky-primary: #3fa9f5;
-    --sky-hover: #1b8adb;
-    --sky-light: #e6f4fd;
+    --bg-color: #f8fafc;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --sky-primary: #0ea5e9;
+    --sky-hover: #0284c7;
+    --sky-light: #e0f2fe;
     --card-bg: #ffffff;
-    --border-color: #d8e8f4;
-    --shadow-sm: 0 4px 6px rgba(63, 169, 245, 0.04);
-    --shadow-md: 0 10px 25px rgba(63, 169, 245, 0.08);
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-primary);
     min-height: 100vh;
@@ -479,12 +479,32 @@ body {
 }
 
 #view-clinical-panel .container-fluid {
-    height: calc(100vh - 36px);
+    height: calc(100vh - 120px);
 }
 
 .scroll-independent {
     overflow-y: auto;
     scrollbar-width: thin;
+    scrollbar-color: rgba(14, 165, 233, 0.2) transparent;
+}
+
+.scroll-independent::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.scroll-independent::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scroll-independent::-webkit-scrollbar-thumb {
+    background: rgba(14, 165, 233, 0.25);
+    border-radius: 4px;
+    transition: var(--transition-smooth);
+}
+
+.scroll-independent::-webkit-scrollbar-thumb:hover {
+    background: rgba(14, 165, 233, 0.45);
 }
 
 .text-ellipsis {
@@ -581,8 +601,221 @@ body {
     color: var(--sky-hover);
 }
 
+/* Glassmorphic Smart Summary Card */
+.smart-summary-card {
+    background: linear-gradient(135deg, rgba(240, 249, 255, 0.7) 0%, rgba(224, 242, 254, 0.7) 100%);
+    border: 1px solid #bae6fd !important;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.05) !important;
+}
 
+/* Vital Signs Input Card */
+.vital-input-card {
+    transition: var(--transition-smooth);
+}
+.vital-input-card:focus-within {
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+.vital-input-card input {
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 0.2rem;
+}
+.vital-input-card input:focus {
+    background: #fff;
+    box-shadow: none;
+    border-color: var(--sky-primary);
+}
+.vital-hint {
+    display: block;
+    margin-top: 0.15rem;
+    color: #64748b;
+}
 
+/* Timeline Customizations */
+.timeline-container {
+    padding-top: 0.5rem;
+}
+.timeline-feed {
+    border-left: 2px solid #f1f5f9;
+    padding-left: 1.25rem;
+    margin-left: 0.75rem;
+}
+.timeline-item {
+    position: relative;
+    padding-bottom: 1rem;
+    border-bottom: 1px dashed #f1f5f9;
+    margin-bottom: 0.75rem;
+}
+.timeline-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: calc(-1.25rem - 6px);
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--sky-primary);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px var(--sky-light);
+    transition: var(--transition-smooth);
+}
+.timeline-item:hover::before {
+    background-color: var(--sky-hover);
+    transform: scale(1.2);
+}
 
+/* Abnormal vital alerts */
+.vital-alert-danger {
+    border-color: #fca5a5 !important;
+    background-color: #fef2f2 !important;
+    color: #ef4444 !important;
+}
+.vital-alert-warning {
+    border-color: #fde047 !important;
+    background-color: #fefce8 !important;
+    color: #ca8a04 !important;
+}
+.vital-alert-success {
+    border-color: #bbf7d0 !important;
+    background-color: #f0fdf4 !important;
+    color: #15803d !important;
+}
 
+/* MEDNET MOCKUP SIDEBAR & NAVIGATION MENU */
+#clinical-sidebar-menu .nav-link {
+    transition: var(--transition-smooth);
+    border: 1px solid transparent;
+}
+#clinical-sidebar-menu .nav-link:hover {
+    background-color: #e0f2fe;
+    color: #0369a1 !important;
+}
+#clinical-sidebar-menu .nav-link.active {
+    background-color: #e0f2fe !important;
+    color: #0ea5e9 !important;
+    border-color: rgba(14, 165, 233, 0.1);
+    font-weight: 600 !important;
+}
 
+/* Header icon animations */
+.hover-sky-text {
+    transition: var(--transition-smooth);
+}
+.hover-sky-text:hover {
+    color: var(--sky-primary) !important;
+    transform: scale(1.1);
+}
+
+/* MOCKUP TIMELINE STYLING */
+.timeline-container-mock {
+    position: relative;
+    padding-left: 0;
+}
+.timeline-mock-feed {
+    position: relative;
+    padding-left: 0;
+}
+.timeline-mock-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+/* The vertical connecting line aligned with the center of the nodes */
+.timeline-mock-feed::before {
+    content: '';
+    position: absolute;
+    left: 145px; /* Matches exact horizontal alignment of node */
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background-color: #cbd5e1;
+}
+.timeline-mock-date-pill {
+    width: 120px;
+    min-width: 120px;
+    text-align: center;
+    padding: 0.35rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    margin-right: 18px;
+}
+.timeline-mock-date-pill.latest {
+    background-color: var(--sky-primary);
+    color: #ffffff;
+}
+.timeline-mock-date-pill.past {
+    background-color: #f1f5f9;
+    color: #475569;
+}
+.timeline-mock-node {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    border: 2px solid #cbd5e1;
+    z-index: 2;
+    margin-top: 8px;
+    margin-right: 18px;
+    transition: var(--transition-smooth);
+}
+.timeline-mock-node.latest {
+    background-color: var(--sky-primary);
+    border-color: var(--sky-primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+}
+.timeline-mock-card {
+    flex-grow: 1;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    transition: var(--transition-smooth);
+}
+.timeline-mock-card:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--sky-primary);
+}
+.timeline-mock-header {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+}
+.timeline-mock-note {
+    font-size: 0.78rem;
+    color: #475569;
+    line-height: 1.45;
+}
+
+/* Mockup risk badges styling */
+.risk-tag-badge {
+    border-radius: 50px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    border: none !important;
+}
+.risk-tag-orange {
+    background-color: #ffedd5 !important;
+    color: #ea580c !important;
+}
+.risk-tag-yellow {
+    background-color: #fef9c3 !important;
+    color: #ca8a04 !important;
+}
+.risk-tag-red {
+    background-color: #fee2e2 !important;
+    color: #dc2626 !important;
+}
