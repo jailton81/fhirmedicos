@@ -779,6 +779,13 @@ class FormHandler {
         // Switch to clinical panel view
         this.ui.switchView('clinical-panel');
 
+        // Set doctor name in uniform navbar from session
+        const user = this.storage.getUser();
+        if (user) {
+            let doctorName = $('#greet-doctor-name').text().replace('Dr. ', '').trim() || user.name;
+            $('#panel-medico-name').text(doctorName);
+        }
+
         // Set EPS/Aseguradora & Patient info
         $('#panel-eps-name').text(epsName);
         $('#panel-eps-nit').text(epsNit);
@@ -1040,7 +1047,7 @@ class App {
         $('#form-farmaco').on('submit', (e) => this.formHandler.saveFarmaco(e));
 
         // Botón Cierre de Sesión
-        $('#btn-logout').on('click', (e) => {
+        $('#btn-logout, #btn-logout-panel').on('click', (e) => {
             e.preventDefault();
             this.storage.clearSession();
             this.ui.showToast('Sesión cerrada correctamente.', 'info');
