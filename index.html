@@ -298,7 +298,21 @@
 
     <!-- ========================================== -->
     <!-- VIEW 4: CLINICAL PANEL (AUTH VIEW)        -->
-    <div id="view-clinical-panel" class="view-container d-none"></div>
+    <div id="view-clinical-panel" class="view-container d-none" style="background-color: #f8fafc; height: 100vh; overflow: hidden; width: 100%;">
+        <div class="d-flex h-100 w-100">
+            <!-- 1) Menú de navegación (Sidebar izquierdo vacío) -->
+            <div class="border-end bg-white" style="width: 260px; min-width: 260px; height: 100%;"></div>
+
+            <!-- Área de contenido (Derecha) -->
+            <div class="d-flex flex-column flex-grow-1 h-100">
+                <!-- 2) Panel superior vacío -->
+                <div class="border-bottom bg-white" style="height: 120px; min-height: 120px; width: 100%;"></div>
+
+                <!-- 3) Panel inferior vacío -->
+                <div class="flex-grow-1 bg-light" style="width: 100%; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Core CDNs: jQuery 3.6.0, Bootstrap 5 JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
