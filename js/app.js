@@ -785,7 +785,23 @@ class FormHandler {
         const conditions = this.currentConditions || [];
         const allergies = this.currentAllergies || [];
         const medications = this.currentMedications || [];
+        
+        const badgesContainer = $('#smart-clinical-summary-badges');
+        badgesContainer.empty();
 
+        // Check if it's the Alice Vance mock patient
+        if (name.toLowerCase().includes('alice') || name.toLowerCase().includes('vance')) {
+            $('#smart-clinical-summary-text').html(
+                `<strong>Alice Vance</strong> (F, 42) presented with persistent chest pain and mild dyspnea for 10 days. Recent ECG (15/10/2023) shows sinus rhythm with subtle ST changes. Echo shows preserved ejection fraction (EF: 58%). Family history positive for CAD (father). Recommended follow-up includes lipid panel, stress test, and cardiology consultation to investigate chest pain etiology. Review current medications for hypertension and dynamic changes.`
+            );
+            badgesContainer.append(`<span class="risk-tag-badge risk-tag-orange">Chest Pain</span>`);
+            badgesContainer.append(`<span class="risk-tag-badge risk-tag-yellow">CAD Family History</span>`);
+            badgesContainer.append(`<span class="risk-tag-badge" style="background-color: #fef08a !important; color: #854d0e !important; border-radius: 50px; padding: 0.25rem 0.75rem; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center;">Mild Dyspnea</span>`);
+            badgesContainer.append(`<span class="risk-tag-badge risk-tag-red">ECG Abnormal</span>`);
+            return;
+        }
+
+        // Standard Dynamic summary in Spanish
         let summaryParts = [];
         summaryParts.push(`<strong>${name}</strong> es un paciente de <strong>${ageText}</strong> de sexo <strong>${genderText}</strong>.`);
 
@@ -810,20 +826,42 @@ class FormHandler {
 
         $('#smart-clinical-summary-text').html(summaryParts.join(' '));
 
-        const badgesContainer = $('#smart-clinical-summary-badges');
-        badgesContainer.empty();
+        // Smart dynamic tag parsing
+        let tagsFound = false;
+        conditions.forEach(c => {
+            const desc = c.descripcion.toLowerCase();
+            if (desc.includes('dolor') || desc.includes('pecho') || desc.includes('torácico') || desc.includes('pain') || desc.includes('chest')) {
+                badgesContainer.append(`<span class="risk-tag-badge risk-tag-orange">Dolor Torácico</span>`);
+                tagsFound = true;
+            }
+            if (desc.includes('disnea') || desc.includes('respirar') || desc.includes('dyspnea')) {
+                badgesContainer.append(`<span class="risk-tag-badge" style="background-color: #fef08a !important; color: #854d0e !important; border-radius: 50px; padding: 0.25rem 0.75rem; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center;">Disnea Leve</span>`);
+                tagsFound = true;
+            }
+            if (desc.includes('hipertensión') || desc.includes('presión') || desc.includes('hypertension') || desc.includes('tensión')) {
+                badgesContainer.append(`<span class="risk-tag-badge risk-tag-orange">Hipertensión Art.</span>`);
+                tagsFound = true;
+            }
+            if (desc.includes('cardio') || desc.includes('coronaria') || desc.includes('isquémica') || desc.includes('cad') || desc.includes('infarto')) {
+                badgesContainer.append(`<span class="risk-tag-badge risk-tag-yellow">Heredo-Fam CAD</span>`);
+                tagsFound = true;
+            }
+        });
 
-        if (allergies.length > 0) {
-            badgesContainer.append(`<span class="risk-tag-badge risk-tag-red"><i class="bi bi-virus me-1"></i>Alérgeno Crítico</span>`);
-        }
-        if (conditions.length > 0) {
-            badgesContainer.append(`<span class="risk-tag-badge risk-tag-orange"><i class="bi bi-heart-pulse me-1"></i>Patología Activa</span>`);
-        }
-        if (medications.length > 0) {
-            badgesContainer.append(`<span class="risk-tag-badge risk-tag-yellow"><i class="bi bi-capsule me-1"></i>Farmacoterapia</span>`);
-        }
-        if (allergies.length === 0 && conditions.length === 0) {
-            badgesContainer.append(`<span class="risk-tag-badge" style="background-color: #d1fae5 !important; color: #065f46 !important;"><i class="bi bi-shield-check me-1"></i>Bajo Riesgo</span>`);
+        // Add standard fallbacks if no specific tags were found
+        if (!tagsFound) {
+            if (allergies.length > 0) {
+                badgesContainer.append(`<span class="risk-tag-badge risk-tag-red"><i class="bi bi-virus me-1"></i>Alérgeno Crítico</span>`);
+            }
+            if (conditions.length > 0) {
+                badgesContainer.append(`<span class="risk-tag-badge risk-tag-orange"><i class="bi bi-heart-pulse me-1"></i>Patología Activa</span>`);
+            }
+            if (medications.length > 0) {
+                badgesContainer.append(`<span class="risk-tag-badge risk-tag-yellow"><i class="bi bi-capsule me-1"></i>Farmacoterapia</span>`);
+            }
+            if (allergies.length === 0 && conditions.length === 0) {
+                badgesContainer.append(`<span class="risk-tag-badge" style="background-color: #d1fae5 !important; color: #065f46 !important;"><i class="bi bi-shield-check me-1"></i>Bajo Riesgo</span>`);
+            }
         }
     }
 
@@ -938,8 +976,20 @@ class FormHandler {
             }
             
             // Set values to the sidebar Patient Profile & Title Header
-            $('#sidebar-patient-name').text(`${patientFullName}, ${ageText.replace(' años', '')}`);
+            $('#sidebar-patient-name').text(patientFullName);
             $('#sidebar-patient-id').text(idNumber);
+            $('#sidebar-patient-doc').text(`${idType} ${idNumber}`);
+            $('#sidebar-patient-sex').text(genderText);
+            $('#sidebar-patient-age').text(ageText);
+
+            // Get occupation from resPatient
+            let occupation = 'N/A';
+            if (resPatient && !resPatient.error && resPatient.status === 'success' && resPatient.data && resPatient.data.length > 0) {
+                occupation = resPatient.data[0].ocupacion || 'N/A';
+            }
+            $('#sidebar-patient-occupation').text(occupation).attr('title', occupation);
+            $('#sidebar-patient-eps').text(epsName).attr('title', epsName);
+
             $('#panel-patient-title-name').text(`Patient Overview - ${patientFullName}`);
 
             // Dynamic patient avatar

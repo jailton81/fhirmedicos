@@ -300,13 +300,137 @@
     <!-- VIEW 4: CLINICAL PANEL (AUTH VIEW)        -->
     <div id="view-clinical-panel" class="view-container d-none" style="background-color: #f8fafc; height: 100vh; overflow: hidden; width: 100%;">
         <div class="d-flex h-100 w-100">
-            <!-- 1) Menú de navegación (Sidebar izquierdo vacío) -->
-            <div class="border-end bg-white" style="width: 260px; min-width: 260px; height: 100%;"></div>
+            <!-- 1) Menú de navegación (Sidebar izquierdo) -->
+            <div class="clinical-sidebar d-flex flex-column p-4 border-end bg-white" style="width: 260px; min-width: 260px; height: 100%; overflow-y: auto;">
+                <!-- Logo -->
+                <div class="brand-logo mb-4 fs-5 fw-bold text-primary d-flex align-items-center gap-2" style="font-family: 'Inter', sans-serif;">
+                    <i class="bi bi-activity text-sky-hover"></i>Gesalud
+                </div>
+
+                <!-- Patient Profile Summary -->
+                <div class="d-flex align-items-center gap-3 mb-3 mt-2">
+                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150" id="sidebar-patient-avatar" class="rounded-circle border" style="width: 48px; height: 48px; object-fit: cover;" alt="Patient Avatar">
+                    <div class="d-flex flex-column text-truncate">
+                        <strong id="sidebar-patient-name" class="text-dark fs-7.5 text-truncate">Cargando...</strong>
+                        <span class="text-secondary fs-9" id="sidebar-patient-doc">ID: ...</span>
+                    </div>
+                </div>
+
+                <!-- Patient Additional Info Grid -->
+                <div class="d-flex flex-column gap-1.5 mb-4 border-top pt-3 fs-9 text-muted" style="font-family: 'Inter', sans-serif;">
+                    <div class="d-flex justify-content-between">
+                        <span>Sexo:</span>
+                        <strong id="sidebar-patient-sex" class="text-dark">--</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Edad:</span>
+                        <strong id="sidebar-patient-age" class="text-dark">--</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Ocupación:</span>
+                        <strong id="sidebar-patient-occupation" class="text-dark text-truncate text-end" style="max-width: 130px;" title="Cargando...">--</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Aseguradora:</span>
+                        <strong id="sidebar-patient-eps" class="text-dark text-truncate text-end" style="max-width: 130px;" title="Cargando...">--</strong>
+                    </div>
+                </div>
+
+                <!-- Vitals Summary (Row of 3 indicators) -->
+                <div class="border-top border-bottom py-3 mb-4 text-center">
+                    <div class="text-secondary fw-semibold mb-2 text-start px-1 fs-9" style="letter-spacing: 0.5px; font-family: 'Inter', sans-serif;">Vitals</div>
+                    <div class="row g-0 align-items-center">
+                        <div class="col-4 border-end">
+                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">BP</span>
+                            <strong id="sidebar-vital-bp" class="text-dark fs-8">--</strong>
+                        </div>
+                        <div class="col-4 border-end">
+                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">HR</span>
+                            <strong id="sidebar-vital-hr" class="text-dark fs-8">--</strong>
+                        </div>
+                        <div class="col-4">
+                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">Temp</span>
+                            <strong id="sidebar-vital-temp" class="text-dark fs-8">--</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Menu -->
+                <ul class="nav flex-column gap-2" id="clinical-sidebar-menu">
+                    <li class="nav-item">
+                        <a class="nav-link active btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="overview" href="#">
+                            <i class="bi bi-house-door fs-7"></i>Overview
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="patients" href="#">
+                            <i class="bi bi-people fs-7"></i>Patients
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="appointments" href="#">
+                            <i class="bi bi-calendar-event fs-7"></i>Appointments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="records" href="#">
+                            <i class="bi bi-file-earmark-medical fs-7"></i>Records
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="tasks" href="#">
+                            <i class="bi bi-check2-square fs-7"></i>Tasks
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="settings" href="#">
+                            <i class="bi bi-gear fs-7"></i>Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
             <!-- Área de contenido (Derecha) -->
             <div class="d-flex flex-column flex-grow-1 h-100">
-                <!-- 2) Panel superior vacío -->
-                <div class="border-bottom bg-white" style="height: 120px; min-height: 120px; width: 100%;"></div>
+                <!-- 2) Panel superior: Resumen Clínico Inteligente -->
+                <div class="border-bottom bg-white px-4 py-3 d-flex flex-column gap-2" style="height: 220px; min-height: 220px; width: 100%;">
+                    <!-- Top Navigation & Title Bar -->
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 id="panel-patient-title-name" class="fw-bold mb-0 text-dark fs-6">Patient Overview - ...</h5>
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-search text-secondary cursor-pointer fs-6"></i>
+                            <div class="position-relative cursor-pointer">
+                                <i class="bi bi-bell text-secondary fs-6"></i>
+                                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 6px; height: 6px;"></span>
+                            </div>
+                            <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100" class="rounded-circle border" style="width: 32px; height: 32px; object-fit: cover;" alt="Doctor Avatar">
+                        </div>
+                    </div>
+
+                    <!-- Smart Clinical Summary Card -->
+                    <div class="card border rounded-3 p-3 flex-grow-1 d-flex flex-column justify-content-between" style="background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%); border-color: rgba(14, 165, 233, 0.15) !important;">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center bg-sky-light rounded-3" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-stars fs-5" style="color: var(--sky-primary);"></i>
+                                </div>
+                                <span class="fw-bold text-dark fs-7.5">Smart Clinical Summary</span>
+                            </div>
+                            <i class="bi bi-three-dots-vertical text-secondary cursor-pointer fs-6"></i>
+                        </div>
+                        
+                        <p id="smart-clinical-summary-text" class="text-secondary fs-8.5 mb-2 lh-base" style="font-family: 'Inter', sans-serif;">
+                            Cargando resumen clínico del paciente...
+                        </p>
+
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="text-muted fw-semibold fs-9">Risk Tags:</span>
+                            <div id="smart-clinical-summary-badges" class="d-flex align-items-center gap-1.5 flex-wrap">
+                                <!-- Dynamic tags will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- 3) Panel inferior vacío -->
                 <div class="flex-grow-1 bg-light" style="width: 100%; overflow-y: auto;"></div>
