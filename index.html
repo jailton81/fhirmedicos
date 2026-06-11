@@ -298,8 +298,32 @@
 
     <!-- ========================================== -->
     <!-- VIEW 4: CLINICAL PANEL (AUTH VIEW)        -->
-    <div id="view-clinical-panel" class="view-container d-none" style="background-color: #f8fafc; height: 100vh; overflow: hidden; width: 100%;">
-        <div class="d-flex h-100 w-100">
+    <div id="view-clinical-panel" class="view-container d-none d-flex flex-column" style="background-color: #f8fafc; height: 100vh; overflow: hidden; width: 100%;">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg dashboard-nav sticky-top py-1">
+            <div class="container">
+                <span class="navbar-brand brand-logo fs-6">
+                    <i class="bi bi-activity text-sky-hover"></i>GESALUD<span class="brand-dot">.</span><span class="fs-8 fw-semibold text-secondary ms-2 border-start ps-2">Portal Clínico</span>
+                </span>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" class="btn btn-sm btn-sky-outline py-1 px-2.5 fs-8 btn-nav-dashboard" title="Ver Dashboard">
+                        <i class="bi bi-grid-1x2 me-1"></i>Dashboard
+                    </button>
+                    <button type="button" class="btn btn-sm btn-sky py-1 px-2.5 fs-8 btn-nav-atencion d-none" title="Ver Consulta Activa">
+                        <i class="bi bi-person-workspace me-1"></i>Atención Activa
+                    </button>
+                    <div class="d-flex flex-column text-end d-none d-md-block">
+                        <span id="panel-medico-name" class="fw-semibold text-primary fs-7.5">Cargando...</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-sky-outline py-1 px-2.5 fs-8" id="btn-logout-panel" title="Cerrar Sesión">
+                        <i class="bi bi-box-arrow-left"></i>Cerrar
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="d-flex flex-grow-1 w-100" style="overflow: hidden;">
             <!-- 1) Menú de navegación (Sidebar izquierdo) -->
             <div class="clinical-sidebar d-flex flex-column p-4 border-end bg-white" style="width: 290px; min-width: 290px; height: 100%; overflow-y: auto;">
                 <!-- Logo -->
@@ -405,18 +429,36 @@
                     </div>
                 </div>
 
-                <!-- Tabs Container -->
-                <div class="flex-grow-1 position-relative" style="overflow: hidden;">
-                    
-                    <!-- TAB: OVERVIEW -->
-                    <div id="tab-overview" class="clinical-tab-content d-flex flex-column h-100 scroll-independent">
-                        <!-- Smart Clinical Summary Card -->
-                        <div class="p-4 pb-0">
-                            <div class="card border rounded-3 p-3 shadow-sm" style="background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%); border-color: rgba(14, 165, 233, 0.15) !important;">
+                <!-- Upper Section: Patient Info & Smart Clinical Summary (Always visible at the top) -->
+                <div class="p-4 pb-0">
+                    <div class="d-flex flex-column flex-md-row gap-3 align-items-stretch">
+                        <!-- Left Column: Patient Info (ancho ajustado al contenido) -->
+                        <div class="card border rounded-3 p-3 shadow-sm bg-white d-flex flex-row align-items-center gap-3" style="flex: 0 1 auto; min-width: 320px;">
+                            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150" id="overview-patient-avatar" class="rounded-circle border" style="width: 60px; height: 60px; object-fit: cover;" alt="Patient Avatar">
+                            <div class="d-flex flex-column justify-content-center text-truncate">
+                                <span class="text-uppercase text-sky fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">Paciente Seleccionado</span>
+                                <strong id="overview-patient-name" class="text-dark fs-7.5 text-truncate mb-0.5" style="max-width: 210px;">Cargando...</strong>
+                                <div class="d-flex flex-wrap align-items-center gap-1.5 fs-9 text-muted font-monospace mb-1">
+                                    <span id="overview-patient-doc">ID: ...</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2.5 fs-9.5 text-secondary">
+                                    <span><i class="bi bi-gender-ambiguous me-1 text-muted"></i><span id="overview-patient-sex">--</span></span>
+                                    <span class="text-secondary-subtle">|</span>
+                                    <span><i class="bi bi-calendar3 me-1 text-muted"></i><span id="overview-patient-age">--</span></span>
+                                </div>
+                                <div class="fs-9 text-muted text-truncate mt-1" style="max-width: 210px;">
+                                    <i class="bi bi-shield-check me-1 text-success"></i><span id="overview-patient-eps" class="fw-medium">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Smart Clinical Summary (ancho restante) -->
+                        <div class="card border rounded-3 p-3 shadow-sm flex-grow-1 d-flex flex-column justify-content-between" style="background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%); border-color: rgba(14, 165, 233, 0.15) !important;">
+                            <div>
                                 <div class="d-flex justify-content-between align-items-center mb-1.5">
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="d-flex align-items-center justify-content-center bg-sky-light rounded-3" style="width: 32px; height: 32px;">
-                                            <i class="bi bi-stars fs-5" style="color: var(--sky-primary);"></i>
+                                        <div class="d-flex align-items-center justify-content-center bg-sky-light rounded-3" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-stars fs-6.5" style="color: var(--sky-primary);"></i>
                                         </div>
                                         <span class="fw-bold text-dark fs-7.5">Smart Clinical Summary</span>
                                     </div>
@@ -426,15 +468,23 @@
                                 <p id="smart-clinical-summary-text" class="text-secondary fs-8.5 mb-2 lh-base" style="font-family: 'Inter', sans-serif;">
                                     Cargando resumen clínico del paciente...
                                 </p>
+                            </div>
 
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <span class="text-muted fw-semibold fs-9">Risk Tags:</span>
-                                    <div id="smart-clinical-summary-badges" class="d-flex align-items-center gap-1.5 flex-wrap">
-                                        <!-- Dynamic tags will be injected here -->
-                                    </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap border-top pt-2">
+                                        <span class="text-muted fw-semibold fs-9">Risk Tags:</span>
+                                <div id="smart-clinical-summary-badges" class="d-flex align-items-center gap-1.5 flex-wrap">
+                                    <!-- Dynamic tags will be injected here -->
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Tabs Container -->
+                <div class="flex-grow-1 position-relative" style="overflow: hidden;">
+                    
+                    <!-- TAB: OVERVIEW -->
+                    <div id="tab-overview" class="clinical-tab-content d-flex flex-column h-100 scroll-independent">
 
                         <!-- Panel inferior: Línea de tiempo -->
                         <div class="flex-grow-1 p-4" style="width: 100%;">

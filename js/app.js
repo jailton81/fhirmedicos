@@ -781,6 +781,7 @@ class FormHandler {
         const conditions = this.currentConditions || [];
         const allergies = this.currentAllergies || [];
         const medications = this.currentMedications || [];
+        const timeline = this.currentTimeline || [];
         
         const badgesContainer = $('#smart-clinical-summary-badges');
         badgesContainer.empty();
@@ -809,26 +810,82 @@ class FormHandler {
             summaryParts.push(`Sin reporte de alergias conocidas o intolerancias.`);
         }
 
+        // --- Clinical History Integration ---
+        if (timeline.length > 0) {
+            const sortedTimeline = [...timeline].sort((a, b) => parseInt(b.cnsctvo_pcnte) - parseInt(a.cnsctvo_pcnte));
+            const latest = sortedTimeline[0];
+            const dateFormatted = this.formatMockupDate(latest.fcha_aprtra);
+
+            summaryParts.push(`<br><span class="text-dark fw-bold"><i class="bi bi-clock-history me-1 text-primary"></i>Último Encuentro (${dateFormatted}):</span>`);
+            
+            const motivoText = latest.mtvo ? latest.mtvo.trim() : '';
+            const diagText = latest.diagnostico_definitivo || latest.dgnstco_dfntvo || '';
+            const evoText = latest.evlcion ? latest.evlcion.trim() : '';
+
+            if (motivoText || diagText) {
+                let encounterDetails = [];
+                if (motivoText) encounterDetails.push(`motivo: <em>"${motivoText}"</em>`);
+                if (diagText) encounterDetails.push(`diagnóstico: <strong class="text-primary">${diagText}</strong>`);
+                summaryParts.push(`Registrado con ${encounterDetails.join(' y ')}.`);
+            }
+
+            if (evoText) {
+                summaryParts.push(`Evolución: <em>"${evoText}"</em>.`);
+            }
+
+            // Vital Signs of the latest encounter
+            let vitals = [];
+            if (latest.prsion_artrial) vitals.push(`P.A.: <strong>${latest.prsion_artrial}</strong>`);
+            if (latest.frcncia_crdca) vitals.push(`F.C.: <strong>${latest.frcncia_crdca} lpm</strong>`);
+            if (latest.tmprtra) vitals.push(`Temp: <strong>${latest.tmprtra} °C</strong>`);
+            if (latest.pso) vitals.push(`Peso: <strong>${latest.pso} kg</strong>`);
+            if (latest.indce_msa_crpral) vitals.push(`IMC: <strong>${latest.indce_msa_crpral}</strong>`);
+
+            if (vitals.length > 0) {
+                summaryParts.push(`<br><span class="text-muted fw-semibold" style="font-size: 0.8rem;"><i class="bi bi-heart-pulse me-1"></i>Últimos Signos Vitales:</span> ${vitals.join(', ')}.`);
+            }
+
+            const planText = latest.plan_trptco || latest.plan;
+            if (planText && planText.trim()) {
+                summaryParts.push(`<br><span class="text-muted fw-semibold" style="font-size: 0.8rem;"><i class="bi bi-journal-medical me-1"></i>Plan Clínico:</span> <em>"${planText.trim()}"</em>.`);
+            }
+        } else {
+            summaryParts.push(`<br><span class="text-muted"><i class="bi bi-info-circle me-1"></i>Sin consultas previas registradas en la historia clínica.</span>`);
+        }
+
         $('#smart-clinical-summary-text').html(summaryParts.join(' '));
 
-        // Smart dynamic tag parsing
+        // Smart dynamic tag parsing (Antecedents + Clinical History)
+        let processedTags = new Set();
+        let allDiagTexts = conditions.map(c => c.descripcion.toLowerCase());
+        if (timeline.length > 0) {
+            const sortedTimeline = [...timeline].sort((a, b) => parseInt(b.cnsctvo_pcnte) - parseInt(a.cnsctvo_pcnte));
+            const latestDiag = (sortedTimeline[0].diagnostico_definitivo || sortedTimeline[0].dgnstco_dfntvo || '').toLowerCase();
+            if (latestDiag && !allDiagTexts.includes(latestDiag)) {
+                allDiagTexts.push(latestDiag);
+            }
+        }
+
         let tagsFound = false;
-        conditions.forEach(c => {
-            const desc = c.descripcion.toLowerCase();
-            if (desc.includes('dolor') || desc.includes('pecho') || desc.includes('torácico') || desc.includes('pain') || desc.includes('chest')) {
+        allDiagTexts.forEach(desc => {
+            if ((desc.includes('dolor') || desc.includes('pecho') || desc.includes('torácico') || desc.includes('pain') || desc.includes('chest')) && !processedTags.has('pain')) {
                 badgesContainer.append(`<span class="risk-tag-badge risk-tag-orange">Dolor Torácico</span>`);
+                processedTags.add('pain');
                 tagsFound = true;
             }
-            if (desc.includes('disnea') || desc.includes('respirar') || desc.includes('dyspnea')) {
+            if ((desc.includes('disnea') || desc.includes('respirar') || desc.includes('dyspnea')) && !processedTags.has('dyspnea')) {
                 badgesContainer.append(`<span class="risk-tag-badge" style="background-color: #fef08a !important; color: #854d0e !important; border-radius: 50px; padding: 0.25rem 0.75rem; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center;">Disnea Leve</span>`);
+                processedTags.add('dyspnea');
                 tagsFound = true;
             }
-            if (desc.includes('hipertensión') || desc.includes('presión') || desc.includes('hypertension') || desc.includes('tensión')) {
+            if ((desc.includes('hipertensión') || desc.includes('presión') || desc.includes('hypertension') || desc.includes('tensión')) && !processedTags.has('htn')) {
                 badgesContainer.append(`<span class="risk-tag-badge risk-tag-orange">Hipertensión Art.</span>`);
+                processedTags.add('htn');
                 tagsFound = true;
             }
-            if (desc.includes('cardio') || desc.includes('coronaria') || desc.includes('isquémica') || desc.includes('cad') || desc.includes('infarto')) {
+            if ((desc.includes('cardio') || desc.includes('coronaria') || desc.includes('isquémica') || desc.includes('cad') || desc.includes('infarto')) && !processedTags.has('cad')) {
                 badgesContainer.append(`<span class="risk-tag-badge risk-tag-yellow">Heredo-Fam CAD</span>`);
+                processedTags.add('cad');
                 tagsFound = true;
             }
         });
@@ -919,6 +976,7 @@ class FormHandler {
     async loadClinicalPanel(pacienteId, pacienteName, epsName, epsNit) {
         this.currentPatientId = pacienteId;
         this.currentPatientName = pacienteName;
+        this.currentTimeline = [];
 
         // Switch to clinical panel view
         this.ui.switchView('clinical-panel');
@@ -944,6 +1002,10 @@ class FormHandler {
         $('#sidebar-patient-id').text(pacienteId);
         $('#panel-patient-title-name').text(`Patient Overview - ${pacienteName}`);
 
+        // Overview patient card init
+        $('#overview-patient-name').text(`${pacienteName}, --`);
+        $('#overview-patient-doc').text(`ID: ${pacienteId}`);
+
         // Set loading states
         if ($('#panel-timeline-container').length > 0) {
             $('#panel-timeline-container').html('<div class="text-muted fs-8 text-center py-3"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Cargando histórico...</div>');
@@ -968,6 +1030,8 @@ class FormHandler {
             const [resPatient, resTimeline] = await Promise.all([
                 pPatient, pTimeline, this.loadPatientHistory(pacienteId)
             ]);
+
+            this.currentTimeline = (resTimeline && !resTimeline.error && resTimeline.data) ? resTimeline.data : [];
 
             // 1. Process Patient summary line and sidebar details card
             let genderText = 'N/A';
@@ -1016,6 +1080,12 @@ class FormHandler {
             $('#sidebar-patient-sex').text(genderText);
             $('#sidebar-patient-age').text(ageText);
 
+            // Set values to the overview patient card
+            $('#overview-patient-name').text(patientFullName);
+            $('#overview-patient-doc').text(`${idType} ${idNumber}`);
+            $('#overview-patient-sex').text(genderText);
+            $('#overview-patient-age').text(ageText);
+
             // Get occupation from resPatient
             let occupation = 'N/A';
             if (resPatient && !resPatient.error && resPatient.status === 'success' && resPatient.data && resPatient.data.length > 0) {
@@ -1023,6 +1093,7 @@ class FormHandler {
             }
             $('#sidebar-patient-occupation').text(occupation).attr('title', occupation);
             $('#sidebar-patient-eps').text(epsName).attr('title', epsName);
+            $('#overview-patient-eps').text(epsName).attr('title', epsName);
 
             $('#panel-patient-title-name').text(`Patient Overview - ${patientFullName}`);
 
@@ -1032,6 +1103,7 @@ class FormHandler {
                 avatarUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'; // male
             }
             $('#sidebar-patient-avatar').attr('src', avatarUrl);
+            $('#overview-patient-avatar').attr('src', avatarUrl);
             
             // Update Smart Clinical Summary Card
             this.updateSmartClinicalSummary(ageText, genderText);
