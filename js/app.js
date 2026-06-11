@@ -523,10 +523,6 @@ class FormHandler {
     }
 
     async loadPatientHistory(pacienteId) {
-        // If history lists are not present in the DOM (e.g. removed from layout), do not load
-        if ($('#list-patologicos-existentes').length === 0) {
-            return;
-        }
 
         // Show loading status in the sidebar cards and panel containers
         $('#list-patologicos-existentes').html('<div class="text-muted fs-8.5 text-center py-1"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Cargando...</div>');
@@ -689,7 +685,7 @@ class FormHandler {
                 this.ui.showToast('Antecedente patológico guardado exitosamente.', 'success');
                 $('#form-patologico')[0].reset();
                 await this.loadConditions(pacienteId);
-                this.updateSmartClinicalSummary($('#panel-pat-age').text(), $('#panel-pat-gender').text());
+                this.updateSmartClinicalSummary($('#sidebar-patient-age').text(), $('#sidebar-patient-sex').text());
             } else {
                 throw new Error(response.message || 'Error al guardar antecedente patológico.');
             }
@@ -717,7 +713,7 @@ class FormHandler {
                 this.ui.showToast('Antecedente alérgico guardado exitosamente.', 'success');
                 $('#form-alergico')[0].reset();
                 await this.loadAllergies(pacienteId);
-                this.updateSmartClinicalSummary($('#panel-pat-age').text(), $('#panel-pat-gender').text());
+                this.updateSmartClinicalSummary($('#sidebar-patient-age').text(), $('#sidebar-patient-sex').text());
             } else {
                 throw new Error(response.message || 'Error al guardar antecedente alérgico.');
             }
@@ -747,7 +743,7 @@ class FormHandler {
                 this.ui.showToast('Antecedente familiar guardado exitosamente.', 'success');
                 $('#form-familiar')[0].reset();
                 await this.loadFamilyHistory(pacienteId);
-                this.updateSmartClinicalSummary($('#panel-pat-age').text(), $('#panel-pat-gender').text());
+                this.updateSmartClinicalSummary($('#sidebar-patient-age').text(), $('#sidebar-patient-sex').text());
             } else {
                 throw new Error(response.message || 'Error al guardar antecedente familiar.');
             }
@@ -773,7 +769,7 @@ class FormHandler {
                 this.ui.showToast('Antecedente farmacológico guardado exitosamente.', 'success');
                 $('#form-farmaco')[0].reset();
                 await this.loadMedications(pacienteId);
-                this.updateSmartClinicalSummary($('#panel-pat-age').text(), $('#panel-pat-gender').text());
+                this.updateSmartClinicalSummary($('#sidebar-patient-age').text(), $('#sidebar-patient-sex').text());
             } else {
                 throw new Error(response.message || 'Error al guardar antecedente farmacológico.');
             }
@@ -789,17 +785,6 @@ class FormHandler {
         const badgesContainer = $('#smart-clinical-summary-badges');
         badgesContainer.empty();
 
-        // Check if it's the Alice Vance mock patient
-        if (name.toLowerCase().includes('alice') || name.toLowerCase().includes('vance')) {
-            $('#smart-clinical-summary-text').html(
-                `<strong>Alice Vance</strong> (F, 42) presented with persistent chest pain and mild dyspnea for 10 days. Recent ECG (15/10/2023) shows sinus rhythm with subtle ST changes. Echo shows preserved ejection fraction (EF: 58%). Family history positive for CAD (father). Recommended follow-up includes lipid panel, stress test, and cardiology consultation to investigate chest pain etiology. Review current medications for hypertension and dynamic changes.`
-            );
-            badgesContainer.append(`<span class="risk-tag-badge risk-tag-orange">Chest Pain</span>`);
-            badgesContainer.append(`<span class="risk-tag-badge risk-tag-yellow">CAD Family History</span>`);
-            badgesContainer.append(`<span class="risk-tag-badge" style="background-color: #fef08a !important; color: #854d0e !important; border-radius: 50px; padding: 0.25rem 0.75rem; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center;">Mild Dyspnea</span>`);
-            badgesContainer.append(`<span class="risk-tag-badge risk-tag-red">ECG Abnormal</span>`);
-            return;
-        }
 
         // Standard Dynamic summary in Spanish
         let summaryParts = [];
@@ -868,15 +853,64 @@ class FormHandler {
     formatMockupDate(dateStr) {
         if (!dateStr) return 'Fecha N/A';
         try {
-            const parts = dateStr.split(' ')[0].split('-');
-            const year = parts[0];
-            const monthNum = parseInt(parts[1], 10);
-            const day = parts[2];
+            const datePart = dateStr.trim().split(' ')[0];
             
-            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-            const monthName = months[monthNum - 1] || 'N/A';
+            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+                return datePart;
+            }
             
-            return `${day} ${monthName} ${year}`;
+            const separators = /[-/]/;
+            const parts = datePart.split(separators);
+            if (parts.length === 3) {
+                if (parts[0].length === 4) {
+                    const year = parts[0];
+                    const month = parts[1].padStart(2, '0');
+                    const day = parts[2].padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+                
+                const monthsES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+                const monthsEN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                
+                let day = parts[0];
+                let monthStr = parts[1].toUpperCase();
+                let yearStr = parts[2];
+                
+                let monthNum = parseInt(monthStr, 10);
+                if (isNaN(monthNum)) {
+                    let idx = monthsES.indexOf(monthStr);
+                    if (idx === -1) {
+                        idx = monthsEN.indexOf(monthStr);
+                    }
+                    if (idx !== -1) {
+                        monthNum = idx + 1;
+                    }
+                }
+                
+                if (!isNaN(monthNum) && monthNum >= 1 && monthNum <= 12) {
+                    const month = monthNum.toString().padStart(2, '0');
+                    day = day.padStart(2, '0');
+                    
+                    let year = yearStr;
+                    if (year.length === 2) {
+                        const currentYear = new Date().getFullYear();
+                        const century = Math.floor(currentYear / 100) * 100;
+                        const shortYear = parseInt(year, 10);
+                        year = (shortYear >= 80 ? century - 100 + shortYear : century + shortYear).toString();
+                    }
+                    return `${year}-${month}-${day}`;
+                }
+            }
+            
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                const year = d.getFullYear();
+                const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                const day = d.getDate().toString().padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            return dateStr;
         } catch (e) {
             return dateStr;
         }
