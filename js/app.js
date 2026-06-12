@@ -529,6 +529,7 @@ class FormHandler {
         $('#list-alergicos-existentes').html('<div class="text-muted fs-8.5 text-center py-1"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Cargando...</div>');
         $('#list-familiares-existentes').html('<div class="text-muted fs-8.5 text-center py-1"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Cargando...</div>');
         $('#list-farmacos-existentes').html('<div class="text-muted fs-8.5 text-center py-1"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Cargando...</div>');
+        $('#list-diagnosticos-activos').html('<div class="text-muted fs-8.5 text-center py-1"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Cargando...</div>');
 
         // Reset all forms
         if ($('#form-patologico')[0]) $('#form-patologico')[0].reset();
@@ -541,8 +542,137 @@ class FormHandler {
         const pAllergy = this.loadAllergies(pacienteId);
         const pFamily = this.loadFamilyHistory(pacienteId);
         const pMedication = this.loadMedications(pacienteId);
+        const pDiagnoses = this.loadDiagnosticosHC(pacienteId);
+        const pStatusOpts = this.loadStatusOptions();
 
-        await Promise.all([pCondition, pAllergy, pFamily, pMedication]);
+        await Promise.all([pCondition, pAllergy, pFamily, pMedication, pDiagnoses, pStatusOpts]);
+    }
+
+    async loadDiagnosticosHC(pacienteId) {
+        try {
+            const pDiag = this.api.request(`getDiagnosticoHC.php?id_pcnte=${pacienteId}`, 'GET').catch(err => ({ error: true, data: [] }));
+            const pCond = this.api.request(`getCondition.php?id_pcnte=${pacienteId}`, 'GET').catch(err => ({ error: true, data: [] }));
+            
+            const [resDiag, resCond] = await Promise.all([pDiag, pCond]);
+            const sideContainer = $('#list-diagnosticos-activos');
+            sideContainer.empty();
+
+            const allItems = [];
+
+            if (resDiag && resDiag.status === 'success' && resDiag.data && resDiag.data.length > 0) {
+                resDiag.data.forEach(item => {
+                    allItems.push({
+                        cie_10: item.cie_10,
+                        codigo: item.codigo,
+                        descripcion: item.descripcion,
+                        estado: item.estado
+                    });
+                });
+            }
+
+            if (resCond && resCond.status === 'success' && resCond.data && resCond.data.length > 0) {
+                resCond.data.forEach(item => {
+                    allItems.push({
+                        cie_10: item.cie_10,
+                        codigo: item.codigo,
+                        descripcion: item.descripcion,
+                        estado: item.status_clinico_code || item.estado
+                    });
+                });
+            }
+
+            const unique = [];
+            const seen = new Set();
+            allItems.forEach(item => {
+                const key = (item.cie_10 || item.codigo || item.descripcion || '').trim().toLowerCase();
+                const isActive = (item.estado || '').trim().toLowerCase() === 'active';
+                if (isActive && key && !seen.has(key)) {
+                    seen.add(key);
+                    unique.push(item);
+                }
+            });
+
+            if (unique.length > 0) {
+                unique.forEach(item => {
+                    const displayCode = item.cie_10 || item.codigo || 'CIE-10';
+                    const desc = item.descripcion || 'Sin descripción';
+                    sideContainer.append(`
+                        <div class="d-flex justify-content-between align-items-center border-bottom py-1.5 px-1 fs-7.5">
+                            <div class="text-truncate" style="max-width: 100%;">
+                                <span class="badge bg-sky-pale text-primary border font-monospace me-1 fs-8">${displayCode}</span>
+                                <span class="fw-medium text-dark" title="${desc}">${desc}</span>
+                            </div>
+                        </div>
+                    `);
+                });
+            } else {
+                sideContainer.html('<div class="text-muted fs-8.5 text-center py-1">Sin diagnósticos activos.</div>');
+            }
+        } catch (error) {
+            console.error("Error al cargar diagnósticos:", error);
+            $('#list-diagnosticos-activos').html('<div class="text-danger fs-8.5 text-center py-1">Error al cargar.</div>');
+        }
+    }
+
+    async loadStatusOptions() {
+        try {
+            const pStatus = this.api.request('getEstados.php?status=ConditionClinicalStatusCodes', 'GET').catch(err => ({ error: true, data: [] }));
+            const pAllergyStatus = this.api.request('getEstados.php?status=AllergyIntoleranceClinicalStatusCodes', 'GET').catch(err => ({ error: true, data: [] }));
+            const pVerif = this.api.request('getEstados.php?status=verificationStatus', 'GET').catch(err => ({ error: true, data: [] }));
+            const pMedStatus = this.api.request('getEstados.php?status=MedicationStatusCodes', 'GET').catch(err => ({ error: true, data: [] }));
+
+            const [resStatus, resAllergyStatus, resVerif, resMedStatus] = await Promise.all([pStatus, pAllergyStatus, pVerif, pMedStatus]);
+
+            if (resStatus && resStatus.status === 'success' && resStatus.data) {
+                // Populate pathological status
+                const selectEstado = $('#pat_estado');
+                selectEstado.empty();
+                resStatus.data.forEach(item => {
+                    selectEstado.append(new Option(item.display, item.code));
+                });
+
+                // Populate family history status
+                const selectFamEstado = $('#fam_estado');
+                selectFamEstado.empty();
+                resStatus.data.forEach(item => {
+                    selectFamEstado.append(new Option(item.display, item.code));
+                });
+            }
+
+            if (resAllergyStatus && resAllergyStatus.status === 'success' && resAllergyStatus.data) {
+                const selectAleEstado = $('#ale_estado');
+                selectAleEstado.empty();
+                resAllergyStatus.data.forEach(item => {
+                    selectAleEstado.append(new Option(item.display, item.code));
+                });
+            }
+
+            if (resMedStatus && resMedStatus.status === 'success' && resMedStatus.data) {
+                const selectFarEstado = $('#far_estado');
+                selectFarEstado.empty();
+                resMedStatus.data.forEach(item => {
+                    selectFarEstado.append(new Option(item.display, item.code));
+                });
+            }
+
+            if (resVerif && resVerif.status === 'success' && resVerif.data) {
+                // Populate pathological verification
+                const selectVerif = $('#pat_verif');
+                selectVerif.empty();
+                resVerif.data.forEach(item => {
+                    selectVerif.append(new Option(item.display, item.code));
+                });
+
+                // Populate allergic verification
+                const selectAleVerif = $('#ale_verif');
+                selectAleVerif.empty();
+                resVerif.data.forEach(item => {
+                    selectAleVerif.append(new Option(item.display, item.code));
+                });
+            }
+        } catch (error) {
+            console.error("Error al cargar estados y verificaciones:", error);
+        }
     }
 
     async loadConditions(pacienteId) {
@@ -610,10 +740,12 @@ class FormHandler {
 
             if (res.status === 'success' && res.data && res.data.length > 0) {
                 res.data.forEach(item => {
+                    const cieBadge = item.cie_10 ? `<span class="badge bg-sky-pale text-primary border font-monospace me-1 fs-8">${item.cie_10}</span>` : '';
                     sideContainer.append(`
                         <div class="d-flex justify-content-between align-items-center border-bottom py-1.5 px-1 fs-7.5">
                             <div class="text-truncate" style="max-width: 70%;">
                                 <span class="badge bg-secondary-subtle text-secondary border me-1 fs-8" style="font-size: 0.77rem !important;">${item.parentesco_nombre || 'Familiar'}</span>
+                                ${cieBadge}
                                 <span class="fw-medium text-dark" title="${item.descripcion}">${item.descripcion}</span>
                             </div>
                             <span class="text-muted fw-semibold fs-8">${item.edad_diagnostico !== null ? item.edad_diagnostico + ' años' : 'N/A'}</span>
@@ -638,10 +770,14 @@ class FormHandler {
 
             if (res.status === 'success' && res.data && res.data.length > 0) {
                 res.data.forEach(item => {
+                    const codeBadge = item.codigo ? `<span class="badge bg-secondary-subtle text-secondary border font-monospace me-1 fs-8">${item.codigo}</span>` : '';
                     sideContainer.append(`
                         <div class="d-flex justify-content-between align-items-center border-bottom py-1.5 px-1 fs-7.5">
                             <div class="text-truncate" style="max-width: 70%;">
-                                <span class="fw-semibold text-primary fs-8 text-ellipsis d-block" title="${item.descripcion}">${item.descripcion}</span>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    ${codeBadge}
+                                    <span class="fw-semibold text-primary fs-8 text-ellipsis" title="${item.descripcion}">${item.descripcion}</span>
+                                </div>
                                 <span class="fs-9 text-muted text-ellipsis d-block" title="${item.observaciones || ''}">${item.observaciones || 'Sin especificaciones'}</span>
                             </div>
                             <div class="d-flex align-items-center gap-1">
@@ -842,12 +978,12 @@ class FormHandler {
             if (latest.indce_msa_crpral) vitals.push(`IMC: <strong>${latest.indce_msa_crpral}</strong>`);
 
             if (vitals.length > 0) {
-                summaryParts.push(`<br><span class="text-muted fw-semibold" style="font-size: 0.8rem;"><i class="bi bi-heart-pulse me-1"></i>Últimos Signos Vitales:</span> ${vitals.join(', ')}.`);
+                summaryParts.push(`<br><span class="text-muted fw-semibold fs-9"><i class="bi bi-heart-pulse me-1"></i>Últimos Signos Vitales:</span> ${vitals.join(', ')}.`);
             }
 
             const planText = latest.plan_trptco || latest.plan;
             if (planText && planText.trim()) {
-                summaryParts.push(`<br><span class="text-muted fw-semibold" style="font-size: 0.8rem;"><i class="bi bi-journal-medical me-1"></i>Plan Clínico:</span> <em>"${planText.trim()}"</em>.`);
+                summaryParts.push(`<br><span class="text-muted fw-semibold fs-9"><i class="bi bi-journal-medical me-1"></i>Plan Clínico:</span> <em>"${planText.trim()}"</em>.`);
             }
         } else {
             summaryParts.push(`<br><span class="text-muted"><i class="bi bi-info-circle me-1"></i>Sin consultas previas registradas en la historia clínica.</span>`);
@@ -1000,11 +1136,7 @@ class FormHandler {
         // Set patient basic info in sidebar and workspace header
         $('#sidebar-patient-name').text(`${pacienteName}, --`);
         $('#sidebar-patient-id').text(pacienteId);
-        $('#panel-patient-title-name').text(`Patient Overview - ${pacienteName}`);
 
-        // Overview patient card init
-        $('#overview-patient-name').text(`${pacienteName}, --`);
-        $('#overview-patient-doc').text(`ID: ${pacienteId}`);
 
         // Set loading states
         if ($('#panel-timeline-container').length > 0) {
@@ -1013,9 +1145,6 @@ class FormHandler {
 
         // Reset inputs and values
         if ($('#form-evolucion-diaria')[0]) $('#form-evolucion-diaria')[0].reset();
-        $('#selected-cie10-code').text('CIE-10');
-        $('#selected-cie10-description').text('Ningún diagnóstico seleccionado');
-        $('#evo_diagnostico').val('');
         $('.vital-input-card').removeClass('vital-alert-danger vital-alert-warning vital-alert-success');
 
         try {
@@ -1080,12 +1209,6 @@ class FormHandler {
             $('#sidebar-patient-sex').text(genderText);
             $('#sidebar-patient-age').text(ageText);
 
-            // Set values to the overview patient card
-            $('#overview-patient-name').text(patientFullName);
-            $('#overview-patient-doc').text(`${idType} ${idNumber}`);
-            $('#overview-patient-sex').text(genderText);
-            $('#overview-patient-age').text(ageText);
-
             // Get occupation from resPatient
             let occupation = 'N/A';
             if (resPatient && !resPatient.error && resPatient.status === 'success' && resPatient.data && resPatient.data.length > 0) {
@@ -1093,9 +1216,6 @@ class FormHandler {
             }
             $('#sidebar-patient-occupation').text(occupation).attr('title', occupation);
             $('#sidebar-patient-eps').text(epsName).attr('title', epsName);
-            $('#overview-patient-eps').text(epsName).attr('title', epsName);
-
-            $('#panel-patient-title-name').text(`Patient Overview - ${patientFullName}`);
 
             // Dynamic patient avatar
             let avatarUrl = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'; // Alice Vance style female
@@ -1103,7 +1223,6 @@ class FormHandler {
                 avatarUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'; // male
             }
             $('#sidebar-patient-avatar').attr('src', avatarUrl);
-            $('#overview-patient-avatar').attr('src', avatarUrl);
             
             // Update Smart Clinical Summary Card
             this.updateSmartClinicalSummary(ageText, genderText);
@@ -1129,7 +1248,10 @@ class FormHandler {
                     // Set Vitals in left sidebar block
                     $('#sidebar-vital-bp').text(latest.prsion_artrial || '--');
                     $('#sidebar-vital-hr').text(latest.frcncia_crdca || '--');
-                    $('#sidebar-vital-temp').text(latest.tmprtra ? `${parseFloat(latest.tmprtra).toFixed(1)}C` : '--');
+                    $('#sidebar-vital-temp').text(latest.tmprtra ? `${parseFloat(latest.tmprtra).toFixed(1)}°C` : '--');
+                    $('#sidebar-vital-rr').text(latest.frcncia_rsprtria || '--');
+                    $('#sidebar-vital-peso').text(latest.pso ? `${latest.pso} kg` : '--');
+                    $('#sidebar-vital-imc').text(latest.indce_msa_crpral || '--');
 
                     // Render Timeline Feed (MEDNET Mockup Style)
                     const timelineFeed = $('<div class="timeline-mock-feed"></div>');
@@ -1169,6 +1291,9 @@ class FormHandler {
                     $('#sidebar-vital-bp').text('--');
                     $('#sidebar-vital-hr').text('--');
                     $('#sidebar-vital-temp').text('--');
+                    $('#sidebar-vital-rr').text('--');
+                    $('#sidebar-vital-peso').text('--');
+                    $('#sidebar-vital-imc').text('--');
 
                     timelineContainer.html('<div class="text-muted fs-8 text-center py-3">No hay historial de atenciones clínicas.</div>');
                 }
@@ -1186,12 +1311,18 @@ class FormHandler {
         if (!pacienteId) return;
 
         this.executeFormAction('#form-evolucion-diaria', '#view-clinical-panel', async () => {
-            const diagnostico = $('#evo_diagnostico').length > 0 ? $('#evo_diagnostico').val() : null;
             const user = this.storage.getUser();
             const payload = {
                 id_pcnte: pacienteId,
                 mtvo: $('#evo_motivo').length > 0 && $('#evo_motivo').val() ? $('#evo_motivo').val().trim() : null,
                 evlcion: $('#evo_evlcion').length > 0 && $('#evo_evlcion').val() ? $('#evo_evlcion').val().trim() : null,
+                enfrmdad: $('#evo_enfrmdad').length > 0 && $('#evo_enfrmdad').val() ? $('#evo_enfrmdad').val().trim() : null,
+                estdo_gnral: $('#evo_estdo_gnral').length > 0 && $('#evo_estdo_gnral').val() ? $('#evo_estdo_gnral').val().trim() : null,
+                lbrtrios: $('#evo_lbrtrios').length > 0 && $('#evo_lbrtrios').val() ? $('#evo_lbrtrios').val().trim() : null,
+                anlsis: $('#evo_anlsis').length > 0 && $('#evo_anlsis').val() ? $('#evo_anlsis').val().trim() : null,
+                observaciones: $('#evo_obsrvciones').length > 0 && $('#evo_obsrvciones').val() ? $('#evo_obsrvciones').val().trim() : null,
+                diagnostico_definitivo: $('#evo_diagnostico_definitivo').length > 0 && $('#evo_diagnostico_definitivo').val() ? $('#evo_diagnostico_definitivo').val().trim() : null,
+                plan: $('#evo_plan').length > 0 && $('#evo_plan').val() ? $('#evo_plan').val().trim() : null,
                 pso: ($('#evo_pso').length > 0 && $('#evo_pso').val()) ? $('#evo_pso').val().toString() : null,
                 tlla: ($('#evo_tlla').length > 0 && $('#evo_tlla').val()) ? parseFloat($('#evo_tlla').val()) : null,
                 indce_msa_crpral: ($('#evo_imc').length > 0 && $('#evo_imc').val()) ? parseFloat($('#evo_imc').val()) : null,
@@ -1200,8 +1331,6 @@ class FormHandler {
                 frcncia_crdca: ($('#evo_frcncia_crdca').length > 0 && $('#evo_frcncia_crdca').val()) ? parseInt($('#evo_frcncia_crdca').val(), 10) : null,
                 frcncia_rsprtria: ($('#evo_frcncia_rsprtria').length > 0 && $('#evo_frcncia_rsprtria').val()) ? parseInt($('#evo_frcncia_rsprtria').val(), 10) : null,
                 plso: ($('#evo_plso').length > 0 && $('#evo_plso').val()) ? parseInt($('#evo_plso').val(), 10) : null,
-                diagnostico_definitivo: diagnostico,
-                observaciones: $('#evo_plan').length > 0 && $('#evo_plan').val() ? $('#evo_plan').val().trim() : null,
                 id_mdco: user ? user.id : null,
                 usuario_ingreso: user ? user.id : 'API'
             };
@@ -1215,9 +1344,6 @@ class FormHandler {
                 
                 // Limpiar formulario
                 $('#form-evolucion-diaria')[0].reset();
-                $('#selected-cie10-code').text('CIE-10');
-                $('#selected-cie10-description').text('Ningún diagnóstico seleccionado');
-                $('#evo_diagnostico').val('');
 
                 // Redirigir al dashboard y recargar agenda
                 await this.loadDashboardData();
@@ -1428,9 +1554,7 @@ class App {
             const code = $(this).data('code');
             const desc = $(this).data('desc');
 
-            $('#selected-cie10-code').text(code);
-            $('#selected-cie10-description').text(desc);
-            $('#evo_diagnostico').val('CIE10-' + code);
+            $('#evo_diagnostico_definitivo').val(code + ' - ' + desc);
             
             $('#search-cie10-input').val('');
             $('#search-cie10-dropdown').addClass('d-none');

@@ -326,16 +326,13 @@
         <div class="d-flex flex-grow-1 w-100" style="overflow: hidden;">
             <!-- 1) Menú de navegación (Sidebar izquierdo) -->
             <div class="clinical-sidebar d-flex flex-column p-4 border-end bg-white" style="width: 290px; min-width: 290px; height: 100%; overflow-y: auto;">
-                <!-- Logo -->
-                <div class="brand-logo mb-4 fs-5 fw-bold text-primary d-flex align-items-center gap-2" style="font-family: 'Inter', sans-serif;">
-                    <i class="bi bi-activity text-sky-hover"></i>Gesalud
-                </div>
+
 
                 <!-- Patient Profile Summary -->
                 <div class="d-flex align-items-center gap-3 mb-3 mt-2">
                     <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150" id="sidebar-patient-avatar" class="rounded-circle border" style="width: 48px; height: 48px; object-fit: cover;" alt="Patient Avatar">
-                    <div class="d-flex flex-column text-truncate">
-                        <strong id="sidebar-patient-name" class="text-dark fs-7.5 text-truncate">Cargando...</strong>
+                    <div class="d-flex flex-column">
+                        <strong id="sidebar-patient-name" class="text-dark fs-8 lh-sm">Cargando...</strong>
                         <span class="text-secondary fs-9" id="sidebar-patient-doc">ID: ...</span>
                     </div>
                 </div>
@@ -360,10 +357,10 @@
                     </div>
                 </div>
 
-                <!-- Vitals Summary (Row of 3 indicators) -->
+                <!-- Vitals Summary (6 indicators in 2 rows) -->
                 <div class="border-top border-bottom py-3 mb-4 text-center">
                     <div class="text-secondary fw-semibold mb-2 text-start px-1 fs-9" style="letter-spacing: 0.5px; font-family: 'Inter', sans-serif;">Vitals</div>
-                    <div class="row g-0 align-items-center">
+                    <div class="row g-0 align-items-center mb-2">
                         <div class="col-4 border-end">
                             <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">BP</span>
                             <strong id="sidebar-vital-bp" class="text-dark fs-8">--</strong>
@@ -377,48 +374,37 @@
                             <strong id="sidebar-vital-temp" class="text-dark fs-8">--</strong>
                         </div>
                     </div>
+                    <div class="row g-0 align-items-center border-top pt-2">
+                        <div class="col-4 border-end">
+                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">RR</span>
+                            <strong id="sidebar-vital-rr" class="text-dark fs-8">--</strong>
+                        </div>
+                        <div class="col-4 border-end">
+                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">Peso</span>
+                            <strong id="sidebar-vital-peso" class="text-dark fs-8">--</strong>
+                        </div>
+                        <div class="col-4">
+                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">IMC</span>
+                            <strong id="sidebar-vital-imc" class="text-dark fs-8">--</strong>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Navigation Menu -->
-                <ul class="nav flex-column gap-2" id="clinical-sidebar-menu">
-                    <li class="nav-item">
-                        <a class="nav-link active btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="overview" href="#">
-                            <i class="bi bi-house-door fs-7"></i>Overview
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="patients" href="#">
-                            <i class="bi bi-people fs-7"></i>Patients
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="appointments" href="#">
-                            <i class="bi bi-calendar-event fs-7"></i>Appointments
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="records" href="#">
-                            <i class="bi bi-file-earmark-medical fs-7"></i>Records
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="tasks" href="#">
-                            <i class="bi bi-check2-square fs-7"></i>Tasks
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2.5 px-3 py-2 rounded-3 text-secondary fs-8 fw-medium" data-tab="settings" href="#">
-                            <i class="bi bi-gear fs-7"></i>Settings
-                        </a>
-                    </li>
-                </ul>
+                <!-- Active Diagnoses Summary -->
+                <div class="border-bottom pb-3 mb-4 text-center">
+                    <div class="text-secondary fw-semibold mb-2 text-start px-1 fs-9" style="letter-spacing: 0.5px; font-family: 'Inter', sans-serif;">Diagnósticos Activos</div>
+                    <div id="list-diagnosticos-activos" class="d-flex flex-column gap-1.5 text-start scroll-independent px-1 fs-9 text-muted" style="max-height: 125px; overflow-y: auto;">
+                        <div class="text-muted fs-8.5 text-center py-1">Sin diagnósticos activos.</div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Área de contenido (Derecha) -->
             <div class="d-flex flex-column flex-grow-1 h-100" style="overflow: hidden;">
                 <!-- Top Navigation & Title Bar (Static, always visible) -->
                 <div class="border-bottom bg-white px-4 py-2.5 d-flex justify-content-between align-items-center shadow-sm" style="height: 60px; min-height: 60px; width: 100%;">
-                    <h5 id="panel-patient-title-name" class="fw-bold mb-0 text-dark fs-6">Patient Overview - ...</h5>
+                    <div></div>
                     <div class="d-flex align-items-center gap-3">
                         <i class="bi bi-search text-secondary cursor-pointer fs-6 hover-sky-text"></i>
                         <div class="position-relative cursor-pointer hover-sky-text">
@@ -431,27 +417,41 @@
 
                 <!-- Upper Section: Patient Info & Smart Clinical Summary (Always visible at the top) -->
                 <div class="p-4 pb-0">
-                    <div class="d-flex flex-column flex-md-row gap-3 align-items-stretch">
-                        <!-- Left Column: Patient Info (ancho ajustado al contenido) -->
-                        <div class="card border rounded-3 p-3 shadow-sm bg-white d-flex flex-row align-items-center gap-3" style="flex: 0 1 auto; min-width: 320px;">
-                            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150" id="overview-patient-avatar" class="rounded-circle border" style="width: 60px; height: 60px; object-fit: cover;" alt="Patient Avatar">
-                            <div class="d-flex flex-column justify-content-center text-truncate">
-                                <span class="text-uppercase text-sky fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">Paciente Seleccionado</span>
-                                <strong id="overview-patient-name" class="text-dark fs-7.5 text-truncate mb-0.5" style="max-width: 210px;">Cargando...</strong>
-                                <div class="d-flex flex-wrap align-items-center gap-1.5 fs-9 text-muted font-monospace mb-1">
-                                    <span id="overview-patient-doc">ID: ...</span>
-                                </div>
-                                <div class="d-flex align-items-center gap-2.5 fs-9.5 text-secondary">
-                                    <span><i class="bi bi-gender-ambiguous me-1 text-muted"></i><span id="overview-patient-sex">--</span></span>
-                                    <span class="text-secondary-subtle">|</span>
-                                    <span><i class="bi bi-calendar3 me-1 text-muted"></i><span id="overview-patient-age">--</span></span>
-                                </div>
-                                <div class="fs-9 text-muted text-truncate mt-1" style="max-width: 210px;">
-                                    <i class="bi bi-shield-check me-1 text-success"></i><span id="overview-patient-eps" class="fw-medium">--</span>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Navigation Menu -->
+                    <ul class="nav gap-2 mb-3" id="clinical-sidebar-menu" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                        <li class="nav-item">
+                            <a class="nav-link active btn-sidebar-tab d-flex align-items-center gap-2 px-3 py-1.5 rounded-3 text-secondary fs-8 fw-medium" data-tab="overview" href="#">
+                                <i class="bi bi-house-door fs-7.5"></i>Overview
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2 px-3 py-1.5 rounded-3 text-secondary fs-8 fw-medium" data-tab="patients" href="#">
+                                <i class="bi bi-people fs-7.5"></i>Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2 px-3 py-1.5 rounded-3 text-secondary fs-8 fw-medium" data-tab="appointments" href="#">
+                                <i class="bi bi-calendar-event fs-7.5"></i>Appointments
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2 px-3 py-1.5 rounded-3 text-secondary fs-8 fw-medium" data-tab="records" href="#">
+                                <i class="bi bi-file-earmark-medical fs-7.5"></i>Records
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2 px-3 py-1.5 rounded-3 text-secondary fs-8 fw-medium" data-tab="tasks" href="#">
+                                <i class="bi bi-check2-square fs-7.5"></i>Tasks
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn-sidebar-tab d-flex align-items-center gap-2 px-3 py-1.5 rounded-3 text-secondary fs-8 fw-medium" data-tab="settings" href="#">
+                                <i class="bi bi-gear fs-7.5"></i>Settings
+                            </a>
+                        </li>
+                    </ul>
 
+                    <div class="d-flex flex-column flex-md-row gap-3 align-items-stretch">
                         <!-- Right Column: Smart Clinical Summary (ancho restante) -->
                         <div class="card border rounded-3 p-3 shadow-sm flex-grow-1 d-flex flex-column justify-content-between" style="background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 100%); border-color: rgba(14, 165, 233, 0.15) !important;">
                             <div>
@@ -465,7 +465,7 @@
                                     <i class="bi bi-three-dots-vertical text-secondary cursor-pointer fs-6"></i>
                                 </div>
                                 
-                                <p id="smart-clinical-summary-text" class="text-secondary fs-8.5 mb-2 lh-base" style="font-family: 'Inter', sans-serif;">
+                                <p id="smart-clinical-summary-text" class="text-secondary fs-8 mb-2 lh-base" style="font-family: 'Inter', sans-serif;">
                                     Cargando resumen clínico del paciente...
                                 </p>
                             </div>
@@ -501,125 +501,7 @@
                     <div id="tab-records" class="clinical-tab-content d-none h-100 scroll-independent bg-light">
                         <div class="container-fluid py-4 h-100">
                             <div class="row g-4 h-100">
-                                <!-- Left Column: Daily Evolution Form -->
-                                <div class="col-lg-7 col-xl-8 h-100">
-                                    <div class="card border rounded-3 p-4 shadow-sm bg-white h-100 scroll-independent">
-                                        <h5 class="fw-bold mb-3 text-dark fs-6" style="font-family: 'Inter', sans-serif;">Evolución Clínica Diaria</h5>
-                                        <form id="form-evolucion-diaria">
-                                            <!-- Row 1: Reason and Evolution -->
-                                            <div class="row g-3 mb-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-semibold fs-8" for="evo_motivo">Motivo de Consulta</label>
-                                                    <textarea class="form-control fs-8" id="evo_motivo" rows="3" placeholder="Ej. Paciente refiere dolor torácico de 2 horas de evolución..." required></textarea>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-semibold fs-8" for="evo_evlcion">Evolución Clínica</label>
-                                                    <textarea class="form-control fs-8" id="evo_evlcion" rows="3" placeholder="Escriba aquí los hallazgos del examen físico y evolución..." required></textarea>
-                                                </div>
-                                            </div>
-
-                                            <!-- Row 2: Vitals Inputs Grid -->
-                                            <h6 class="form-section-title mb-3 fs-8">Signos Vitales</h6>
-                                            <div class="row g-2 mb-3">
-                                                <div class="col-6 col-sm-4 col-md-3">
-                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
-                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">T.A. (Presión Art.)</span>
-                                                        <input type="text" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_prsion" placeholder="120/80" required>
-                                                        <span class="vital-hint fs-9.5">mmHg</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-sm-4 col-md-3">
-                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
-                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Frec. Cardíaca</span>
-                                                        <input type="number" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_frcncia_crdca" placeholder="72" required>
-                                                        <span class="vital-hint fs-9.5">lpm</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-sm-4 col-md-3">
-                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
-                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Frec. Respiratoria</span>
-                                                        <input type="number" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_frcncia_rsprtria" placeholder="16" required>
-                                                        <span class="vital-hint fs-9.5">rpm</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-sm-4 col-md-3">
-                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
-                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">SPO2 (Pulso)</span>
-                                                        <input type="number" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_plso" placeholder="98" required>
-                                                        <span class="vital-hint fs-9.5">%</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-sm-4 col-md-3">
-                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
-                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Temperatura</span>
-                                                        <input type="number" step="0.1" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_tmprtra" placeholder="36.5" required>
-                                                        <span class="vital-hint fs-9.5">°C</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-sm-4 col-md-3">
-                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
-                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Peso</span>
-                                                        <input type="number" step="0.1" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_pso" placeholder="70" required>
-                                                        <span class="vital-hint fs-9.5">kg</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-sm-4 col-md-3">
-                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
-                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Talla</span>
-                                                        <input type="number" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_tlla" placeholder="170" required>
-                                                        <span class="vital-hint fs-9.5">cm</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-6 col-sm-4 col-md-3">
-                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
-                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">IMC</span>
-                                                        <input type="text" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8 bg-secondary-subtle" id="evo_imc" readonly placeholder="--">
-                                                        <span class="vital-hint fs-9.5">Calculado</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Row 3: Autocomplete CIE10 and Plan -->
-                                            <div class="row g-3 mb-3">
-                                                <div class="col-md-6 position-relative">
-                                                    <label class="form-label fw-semibold fs-8" for="search-cie10-input">Buscar Diagnóstico CIE-10</label>
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                                                        <input type="text" class="form-control ps-1" id="search-cie10-input" placeholder="Buscar por código o descripción...">
-                                                    </div>
-                                                    
-                                                    <!-- Dropdown Results -->
-                                                    <div id="search-cie10-dropdown" class="list-group position-absolute w-100 mt-1 d-none overflow-y-auto" style="max-height: 180px; z-index: 1000;">
-                                                        <!-- Injected dynamically -->
-                                                    </div>
-
-                                                    <!-- Selected indicator -->
-                                                    <div class="mt-2 border rounded-3 p-2 bg-light d-flex align-items-center justify-content-between">
-                                                        <div class="text-truncate" style="max-width: 90%;">
-                                                            <span id="selected-cie10-code" class="badge bg-primary font-monospace me-2 fs-8.5">CIE-10</span>
-                                                            <span id="selected-cie10-description" class="text-secondary fw-semibold fs-8.5">Ningún diagnóstico seleccionado</span>
-                                                        </div>
-                                                        <input type="hidden" id="evo_diagnostico" required>
-                                                    </div>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-semibold fs-8" for="evo_plan">Plan & Indicaciones Médicas</label>
-                                                    <textarea class="form-control fs-8" id="evo_plan" rows="3" placeholder="Tratamiento, medicamentos e indicaciones..." required></textarea>
-                                                </div>
-                                            </div>
-
-                                            <!-- Form Actions -->
-                                            <div class="d-flex justify-content-end gap-2 mt-4">
-                                                <button type="submit" class="btn btn-sky px-4 py-2 fs-8">
-                                                    <i class="bi bi-vector-pen me-1.5"></i>Firmar y Evolucionar
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <!-- Right Column: Accordion Backgrounds -->
+                                <!-- Left Column: Accordion Backgrounds -->
                                 <div class="col-lg-5 col-xl-4 h-100">
                                     <div class="card border rounded-3 p-3 shadow-sm bg-white h-100 scroll-independent" id="panel-antecedentes-card">
                                         <h5 class="fw-bold mb-3 text-dark fs-6" style="font-family: 'Inter', sans-serif;">Antecedentes del Paciente</h5>
@@ -767,12 +649,12 @@
                                                                     </select>
                                                                 </div>
                                                                 <div class="col-6">
+                                                                    <label class="form-label fs-9 mb-0.5" for="fam_cie10">CIE-10</label>
+                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8 font-monospace" id="fam_cie10" placeholder="Ej: I10">
+                                                                </div>
+                                                                <div class="col-6">
                                                                     <label class="form-label fs-9 mb-0.5" for="fam_edad">Edad Diag.</label>
                                                                     <input type="number" class="form-control py-0.5 px-2 fs-8" id="fam_edad" placeholder="Años">
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <label class="form-label fs-9 mb-0.5" for="fam_descripcion">Patología / Descripción</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="fam_descripcion" placeholder="Ej: Diabetes Tipo II" required>
                                                                 </div>
                                                                 <div class="col-6">
                                                                     <label class="form-label fs-9 mb-0.5" for="fam_estado">Estado</label>
@@ -781,11 +663,14 @@
                                                                         <option value="active">Activo</option>
                                                                     </select>
                                                                 </div>
-                                                                <div class="col-6">
+                                                                <div class="col-12">
+                                                                    <label class="form-label fs-9 mb-0.5" for="fam_descripcion">Patología / Descripción</label>
+                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="fam_descripcion" placeholder="Ej: Diabetes Tipo II" required>
+                                                                </div>
+                                                                <div class="col-12">
                                                                     <label class="form-label fs-9 mb-0.5" for="fam_observaciones">Observaciones</label>
                                                                     <input type="text" class="form-control py-0.5 px-2 fs-8" id="fam_observaciones" placeholder="Detalles...">
                                                                 </div>
-                                                                <input type="hidden" id="fam_cie10" value="">
                                                                 <input type="hidden" id="fam_cie11" value="">
                                                                 <input type="hidden" id="fam_codigo" value="">
                                                                 <div class="col-12 text-end">
@@ -817,6 +702,10 @@
                                                                     <input type="text" class="form-control py-0.5 px-2 fs-8" id="far_descripcion" placeholder="Ej: Losartán 50mg" required>
                                                                 </div>
                                                                 <div class="col-5">
+                                                                    <label class="form-label fs-9 mb-0.5" for="far_codigo">Código</label>
+                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8 font-monospace" id="far_codigo" placeholder="Ej: C09CA01">
+                                                                </div>
+                                                                <div class="col-6">
                                                                     <label class="form-label fs-9 mb-0.5" for="far_estado">Estado</label>
                                                                     <select class="form-select py-0.5 px-2 fs-8" id="far_estado">
                                                                         <option value="active" selected>Activo</option>
@@ -828,7 +717,6 @@
                                                                     <label class="form-label fs-9 mb-0.5" for="far_observaciones">Indicaciones</label>
                                                                     <input type="text" class="form-control py-0.5 px-2 fs-8" id="far_observaciones" placeholder="Ej: 1 tableta diaria">
                                                                 </div>
-                                                                <input type="hidden" id="far_codigo" value="">
                                                                 <div class="col-12 text-end">
                                                                     <button type="submit" class="btn btn-sky py-0.5 px-2.5 fs-9"><i class="bi bi-save me-1"></i>Guardar</button>
                                                                 </div>
@@ -839,6 +727,145 @@
                                             </div>
 
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right Column: Daily Evolution Form -->
+                                <div class="col-lg-7 col-xl-8 h-100">
+                                    <div class="card border rounded-3 p-4 shadow-sm bg-white h-100 scroll-independent">
+                                        <h5 class="fw-bold mb-3 text-dark fs-6" style="font-family: 'Inter', sans-serif;">Evolución Clínica Diaria</h5>
+                                        <form id="form-evolucion-diaria">
+                                            <!-- Row 1: Reason and Evolution -->
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold fs-8" for="evo_motivo">Motivo de Consulta</label>
+                                                    <textarea class="form-control fs-8" id="evo_motivo" rows="3" placeholder="Ej. Paciente refiere dolor torácico de 2 horas de evolución..." required></textarea>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold fs-8" for="evo_evlcion">Evolución Clínica</label>
+                                                    <textarea class="form-control fs-8" id="evo_evlcion" rows="3" placeholder="Escriba aquí los hallazgos del examen físico y evolución..." required></textarea>
+                                                </div>
+                                            </div>
+
+                                            <!-- Row 1.5: Enfermedad y Estado General -->
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold fs-8" for="evo_enfrmdad">Enfermedad Actual (enfrmdad)</label>
+                                                    <textarea class="form-control fs-8" id="evo_enfrmdad" rows="3" placeholder="Descripción de la enfermedad actual..." required></textarea>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold fs-8" for="evo_estdo_gnral">Estado General (estdo_gnral)</label>
+                                                    <textarea class="form-control fs-8" id="evo_estdo_gnral" rows="3" placeholder="Estado general del paciente y constantes generales..." required></textarea>
+                                                </div>
+                                            </div>
+
+                                            <!-- Row 2: Vitals Inputs Grid -->
+                                            <h6 class="form-section-title mb-3 fs-8">Signos Vitales</h6>
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6 col-sm-4 col-md-3">
+                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
+                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">T.A. (Presión Art.)</span>
+                                                        <input type="text" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_prsion" placeholder="120/80" required>
+                                                        <span class="vital-hint fs-9.5">mmHg</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-sm-4 col-md-3">
+                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
+                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Frec. Cardíaca</span>
+                                                        <input type="number" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_frcncia_crdca" placeholder="72" required>
+                                                        <span class="vital-hint fs-9.5">lpm</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-sm-4 col-md-3">
+                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
+                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Frec. Respiratoria</span>
+                                                        <input type="number" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_frcncia_rsprtria" placeholder="16" required>
+                                                        <span class="vital-hint fs-9.5">rpm</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-sm-4 col-md-3">
+                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
+                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">SPO2 (Pulso)</span>
+                                                        <input type="number" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_plso" placeholder="98" required>
+                                                        <span class="vital-hint fs-9.5">%</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-sm-4 col-md-3">
+                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
+                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Temperatura</span>
+                                                        <input type="number" step="0.1" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_tmprtra" placeholder="36.5" required>
+                                                        <span class="vital-hint fs-9.5">°C</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-sm-4 col-md-3">
+                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
+                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Peso</span>
+                                                        <input type="number" step="0.1" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_pso" placeholder="70" required>
+                                                        <span class="vital-hint fs-9.5">kg</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-sm-4 col-md-3">
+                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
+                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">Talla</span>
+                                                        <input type="number" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8" id="evo_tlla" placeholder="170" required>
+                                                        <span class="vital-hint fs-9.5">cm</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6 col-sm-4 col-md-3">
+                                                    <div class="vital-input-card border rounded-3 p-2 bg-light text-center h-100">
+                                                        <span class="text-muted d-block small fw-medium mb-1 fs-9">IMC</span>
+                                                        <input type="text" class="form-control text-center py-1 font-monospace fw-bold text-dark fs-8 bg-secondary-subtle" id="evo_imc" readonly placeholder="--">
+                                                        <span class="vital-hint fs-9.5">Calculado</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Row 3: Autocomplete CIE10 and Plan -->
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-6 position-relative">
+                                                    <label class="form-label fw-semibold fs-8" for="search-cie10-input">Buscar Diagnóstico CIE-10 (dgnstco_dfntvo)</label>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                                                        <input type="text" class="form-control ps-1" id="search-cie10-input" placeholder="Buscar por código o descripción...">
+                                                    </div>
+                                                    
+                                                    <!-- Dropdown Results -->
+                                                    <div id="search-cie10-dropdown" class="list-group position-absolute w-100 mt-1 d-none overflow-y-auto" style="max-height: 180px; z-index: 1000;">
+                                                        <!-- Injected dynamically -->
+                                                    </div>
+
+                                                    <textarea class="form-control fs-8" id="evo_diagnostico_definitivo" rows="2" placeholder="Diagnóstico definitivo..." required></textarea>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold fs-8" for="evo_plan">Plan de Manejo (plan)</label>
+                                                    <textarea class="form-control fs-8" id="evo_plan" rows="4" placeholder="Tratamiento, medicamentos e indicaciones..." required></textarea>
+                                                </div>
+                                            </div>
+
+                                            <!-- Row 4: Laboratorios, Análisis y Observaciones -->
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-4">
+                                                    <label class="form-label fw-semibold fs-8" for="evo_lbrtrios">Laboratorios (lbrtrios)</label>
+                                                    <textarea class="form-control fs-8" id="evo_lbrtrios" rows="3" placeholder="Resultados de laboratorios y paraclínicos..." required></textarea>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label fw-semibold fs-8" for="evo_anlsis">Análisis (anlsis)</label>
+                                                    <textarea class="form-control fs-8" id="evo_anlsis" rows="3" placeholder="Análisis clínico y raciocinio..." required></textarea>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label fw-semibold fs-8" for="evo_obsrvciones">Observaciones (obsrvciones)</label>
+                                                    <textarea class="form-control fs-8" id="evo_obsrvciones" rows="3" placeholder="Observaciones adicionales..." required></textarea>
+                                                </div>
+                                            </div>
+
+                                            <!-- Form Actions -->
+                                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                                <button type="submit" class="btn btn-sky px-4 py-2 fs-8">
+                                                    <i class="bi bi-vector-pen me-1.5"></i>Firmar y Evolucionar
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
