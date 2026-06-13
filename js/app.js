@@ -165,6 +165,62 @@ class UiService {
         $('.view-container').addClass('d-none');
         $(`#view-${viewName}`).removeClass('d-none');
     }
+
+    /**
+     * Renders and displays a premium Bootstrap Modal showing the raw FHIR JSON bundle.
+     * @param {object} bundleJson - MAPPED FHIR bundle
+     */
+    showFhirResourceModal(bundleJson) {
+        $('#fhir-bundle-modal').remove();
+
+        const modalHtml = `
+            <div class="modal fade" id="fhir-bundle-modal" tabindex="-1" aria-labelledby="fhirBundleModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                        <div class="modal-header bg-dark text-white border-0 py-3">
+                            <h5 class="modal-title fs-6 fw-bold" id="fhirBundleModalLabel">
+                                <i class="bi bi-filetype-json text-info me-2"></i>Recurso HL7 FHIR - Resumen Digital de Atención (RDA)
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body bg-light p-4">
+                            <p class="text-secondary small mb-3">
+                                Este es el recurso **FHIR Bundle (type: document)** generado para el Resumen Digital de Atención (RDA) del paciente, mapeando los diagnósticos, fármacos y antecedentes clínicos:
+                            </p>
+                            <div class="fhir-resource-viewer position-relative">
+                                <pre class="mb-0"><code class="language-json" id="fhir-json-block">${JSON.stringify(bundleJson, null, 2)}</code></pre>
+                                <button class="btn btn-sm btn-sky position-absolute top-0 end-0 m-3 px-3 py-1 fs-9" id="btn-copy-fhir-json">
+                                    <i class="bi bi-clipboard me-1"></i>Copiar JSON
+                                </button>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-white border-top-0 py-3">
+                            <button type="button" class="btn btn-sm btn-secondary px-3 py-1.5 fs-8" data-bs-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('body').append(modalHtml);
+
+        // Bind copy button event
+        $('#btn-copy-fhir-json').on('click', function() {
+            const textToCopy = $('#fhir-json-block').text();
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const $btn = $(this);
+                $btn.removeClass('btn-sky').addClass('btn-success text-white').html('<i class="bi bi-check2"></i> Copiado');
+                setTimeout(() => {
+                    $btn.removeClass('btn-success text-white').addClass('btn-sky').html('<i class="bi bi-clipboard me-1"></i>Copiar JSON');
+                }, 1500);
+            }).catch(err => {
+                console.error("Failed to copy text: ", err);
+            });
+        });
+
+        const myModal = new bootstrap.Modal(document.getElementById('fhir-bundle-modal'));
+        myModal.show();
+    }
 }
 
 // =========================================================================
@@ -1430,7 +1486,26 @@ class FormHandler {
                     await this.api.request('createIncapacidad.php', 'POST', incapPayload).catch(err => console.error("Error creating Incapacidad:", err));
                 }
 
-                this.ui.showToast('Evolución clínica firmada e interoperada exitosamente.', 'success');
+                // 5. Generate and Show FHIR RDA Patient Bundle via FHIRAPI
+                try {
+                    const fhirResponse = await $.ajax({
+                        url: '../FHIRAPI/index.php',
+                        type: 'GET',
+                        data: {
+                            id_pcnte: pacienteId,
+                            cnsctvo_pcnte: cnsctvo
+                        },
+                        dataType: 'json'
+                    });
+                    console.log("FHIR Bundle RDA successfully generated:", fhirResponse);
+                    this.ui.showFhirResourceModal(fhirResponse);
+                    this.ui.showToast('JSON FHIR del RDA generado correctamente.', 'success');
+                } catch (fhirError) {
+                    console.error("Error generating FHIR RDA Bundle:", fhirError);
+                    this.ui.showToast('Evolución guardada, pero ocurrió un error al generar el JSON FHIR.', 'warning');
+                }
+
+                this.ui.showToast('Evolución clínica firmada exitosamente.', 'success');
                 
                 // Limpiar borrador de localStorage
                 localStorage.removeItem(`draft_patient_${pacienteId}`);
