@@ -819,3 +819,55 @@ body {
     background-color: #fee2e2 !important;
     color: #dc2626 !important;
 }
+
+/* Clinical Step Tabs */
+.clinical-step-tab-btn {
+    background-color: #f8fafc !important;
+    color: #64748b !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    font-weight: 500;
+    transition: all 0.25s ease;
+}
+.clinical-step-tab-btn:hover {
+    color: var(--sky-primary) !important;
+    background-color: #f0f9ff !important;
+    border-color: rgba(14, 165, 233, 0.3) !important;
+}
+.clinical-step-tab-btn.active {
+    background-color: #f0f9ff !important;
+    color: var(--sky-primary) !important;
+    border-color: var(--sky-primary) !important;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+}
+.clinical-step-tab-btn .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #cbd5e1;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    transition: all 0.25s ease;
+}
+.clinical-step-tab-btn.active .step-num {
+    background-color: var(--sky-primary);
+}
+.clinical-step-tab-btn.completed {
+    border-color: #10b981 !important;
+    background-color: #f0fdf4 !important;
+    color: #15803d !important;
+}
+.clinical-step-tab-btn.completed .step-num {
+    background-color: #10b981;
+}
+
+/* Correct active tab pane to be flex column inside the evolution daily form without overriding display: none */
+#form-evolucion-diaria .tab-content > .tab-pane.active {
+    display: flex !important;
+    flex-direction: column;
+}

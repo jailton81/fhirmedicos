@@ -1146,6 +1146,14 @@ class FormHandler {
         // Reset inputs and values
         if ($('#form-evolucion-diaria')[0]) $('#form-evolucion-diaria')[0].reset();
         $('.vital-input-card').removeClass('vital-alert-danger vital-alert-warning vital-alert-success');
+        
+        // Reset evolution tabs to the first tab and clear completed states
+        const firstTabButton = $('#evo-form-tabs .clinical-step-tab-btn').first();
+        if (firstTabButton.length > 0) {
+            const bootstrapTab = new bootstrap.Tab(firstTabButton[0]);
+            bootstrapTab.show();
+        }
+        $('#evo-form-tabs .clinical-step-tab-btn').removeClass('completed');
 
         try {
             // Load Patient demographics (gender, birthdate) and calculate age
@@ -1312,6 +1320,14 @@ class FormHandler {
 
         this.executeFormAction('#form-evolucion-diaria', '#view-clinical-panel', async () => {
             const user = this.storage.getUser();
+            
+            // Append Revisión por Sistemas to Observaciones if filled
+            let obs = $('#evo_obsrvciones').length > 0 && $('#evo_obsrvciones').val() ? $('#evo_obsrvciones').val().trim() : '';
+            const revSist = $('#evo_revision_sistemas').length > 0 && $('#evo_revision_sistemas').val() ? $('#evo_revision_sistemas').val().trim() : '';
+            if (revSist) {
+                obs = `Revisión por Sistemas: ${revSist}\nObservaciones: ${obs}`;
+            }
+
             const payload = {
                 id_pcnte: pacienteId,
                 mtvo: $('#evo_motivo').length > 0 && $('#evo_motivo').val() ? $('#evo_motivo').val().trim() : null,
@@ -1320,7 +1336,7 @@ class FormHandler {
                 estdo_gnral: $('#evo_estdo_gnral').length > 0 && $('#evo_estdo_gnral').val() ? $('#evo_estdo_gnral').val().trim() : null,
                 lbrtrios: $('#evo_lbrtrios').length > 0 && $('#evo_lbrtrios').val() ? $('#evo_lbrtrios').val().trim() : null,
                 anlsis: $('#evo_anlsis').length > 0 && $('#evo_anlsis').val() ? $('#evo_anlsis').val().trim() : null,
-                observaciones: $('#evo_obsrvciones').length > 0 && $('#evo_obsrvciones').val() ? $('#evo_obsrvciones').val().trim() : null,
+                observaciones: obs ? obs : null,
                 diagnostico_definitivo: $('#evo_diagnostico_definitivo').length > 0 && $('#evo_diagnostico_definitivo').val() ? $('#evo_diagnostico_definitivo').val().trim() : null,
                 plan: $('#evo_plan').length > 0 && $('#evo_plan').val() ? $('#evo_plan').val().trim() : null,
                 pso: ($('#evo_pso').length > 0 && $('#evo_pso').val()) ? $('#evo_pso').val().toString() : null,
@@ -1337,13 +1353,96 @@ class FormHandler {
 
             const response = await this.api.request('createHistoriaClinica.php', 'POST', payload);
             if (response.status === 'success') {
+                const cnsctvo = response.cnsctvo_pcnte;
+
+                // 1. Save Diagnosis details to DIAGNOSTICOS_HC table
+                const diagDef = $('#evo_diagnostico_definitivo').val() ? $('#evo_diagnostico_definitivo').val().trim() : '';
+                if (diagDef) {
+                    const parts = diagDef.split(' - ');
+                    const code = parts[0] ? parts[0].trim() : 'GENERIC';
+                    const desc = parts[1] ? parts[1].trim() : diagDef;
+                    
+                    const diagPayload = {
+                        id_pcnte: pacienteId,
+                        cnsctvo_pcnte: cnsctvo,
+                        codigo: code,
+                        cie_10: code,
+                        descripcion: desc,
+                        estado: 'active',
+                        estado_verificacion: 'confirmed',
+                        indicador_diagnostico: $('#evo_indicador_diagnostico').val() ? $('#evo_indicador_diagnostico').val() : 'principal',
+                        tipo_diagnostico: $('#evo_tipo_diagnostico').val() ? $('#evo_tipo_diagnostico').val() : 'impresion_diagnostica',
+                        usuario_ingreso: user ? user.id : 'API'
+                    };
+                    await this.api.request('createDiagnosticoHC.php', 'POST', diagPayload).catch(err => console.error("Error creating DiagnosticoHC:", err));
+                }
+
+                // 2. Save new Formulation (MedicationRequest) to FORMULACION table
+                const formulaDroga = $('#formula_droga').val() ? $('#formula_droga').val().trim() : '';
+                if (formulaDroga) {
+                    const formPayload = {
+                        id_pcnte: pacienteId,
+                        nmro_evlcion: cnsctvo,
+                        cdgo_drga: $('#formula_codigo').val() ? $('#formula_codigo').val().trim() : 'GENERIC',
+                        dscrpcion: formulaDroga,
+                        dosis: $('#formula_dosis').val() ? $('#formula_dosis').val().trim() : null,
+                        via: $('#formula_via').val() ? $('#formula_via').val() : 'Oral',
+                        frecuencia: $('#formula_frecuencia').val() ? $('#formula_frecuencia').val().trim() : null,
+                        duracion: $('#formula_duracion').val() ? $('#formula_duracion').val().trim() : null,
+                        cntdad: $('#formula_cantidad').val() ? parseInt($('#formula_cantidad').val(), 10) : null,
+                        pslgia: $('#formula_indicaciones').val() ? $('#formula_indicaciones').val().trim() : null,
+                        plan: payload.plan,
+                        id_mdco: user ? user.id : null,
+                        usuario_ingreso: user ? user.id : 'API'
+                    };
+                    await this.api.request('createFormulacion.php', 'POST', formPayload).catch(err => console.error("Error creating Formulacion:", err));
+                }
+
+                // 3. Save new Procedure order (ServiceRequest) to PRCDMNTOS_RSLTDOS table
+                const procDesc = $('#procedimiento_descripcion').val() ? $('#procedimiento_descripcion').val().trim() : '';
+                if (procDesc) {
+                    const procPayload = {
+                        id_pcnte: pacienteId,
+                        cnsctvo_pcnte: cnsctvo,
+                        cdgo_prcdmnto: $('#procedimiento_codigo').val() ? $('#procedimiento_codigo').val().trim() : 'GENERIC',
+                        dscrpcion_prcdmnto: procDesc,
+                        cdgo_indcion: $('#procedimiento_indicacion').val() ? $('#procedimiento_indicacion').val().trim() : null,
+                        id_mdco: user ? user.id : null,
+                        usuario_ingreso: user ? user.id : 'API'
+                    };
+                    await this.api.request('createProcedimientoResultado.php', 'POST', procPayload).catch(err => console.error("Error creating ProcedimientoResultado:", err));
+                }
+
+                // 4. Save new Incapacidad (DocumentReference) to RMSION_INCPCDAD table
+                const incapInicio = $('#incapacidad_inicio').val();
+                const incapFin = $('#incapacidad_fin').val();
+                if (incapInicio && incapFin) {
+                    const incapPayload = {
+                        id_pcnte: pacienteId,
+                        cnsctvo_pcnte: cnsctvo,
+                        fcha_incio: incapInicio,
+                        fcha_fnal: incapFin,
+                        drcion: $('#incapacidad_dias').val() ? parseInt($('#incapacidad_dias').val(), 10) : null,
+                        dscrpcion_incpcdad: $('#incapacidad_motivo').val() ? $('#incapacidad_motivo').val().trim() : null,
+                        id_mdco: user ? user.id : null,
+                        usuario_ingreso: user ? user.id : 'API'
+                    };
+                    await this.api.request('createIncapacidad.php', 'POST', incapPayload).catch(err => console.error("Error creating Incapacidad:", err));
+                }
+
                 this.ui.showToast('Evolución clínica firmada e interoperada exitosamente.', 'success');
                 
                 // Limpiar borrador de localStorage
                 localStorage.removeItem(`draft_patient_${pacienteId}`);
                 
-                // Limpiar formulario
+                // Limpiar formulario y resetear pestañas a la primera
                 $('#form-evolucion-diaria')[0].reset();
+                const firstTabButton = $('#evo-form-tabs .clinical-step-tab-btn').first();
+                if (firstTabButton.length > 0) {
+                    const bootstrapTab = new bootstrap.Tab(firstTabButton[0]);
+                    bootstrapTab.show();
+                }
+                $('#evo-form-tabs .clinical-step-tab-btn').removeClass('completed');
 
                 // Redirigir al dashboard y recargar agenda
                 await this.loadDashboardData();
@@ -1610,6 +1709,110 @@ class App {
                 } else {
                     card.addClass('vital-alert-success');
                 }
+            }
+        });
+
+        // -------------------------------------------------------------
+        // CLINICAL TABS - SEQUENCE & NAVIGATION FLOW HANDLERS
+        // -------------------------------------------------------------
+
+        // Programmatic Navigation: Continuar (Next) button
+        $(document).on('click', '.btn-next-step', (e) => {
+            e.preventDefault();
+            // Validate required fields in the current active tab pane
+            const currentPane = $('.tab-content .tab-pane.active');
+            let isValid = true;
+
+            currentPane.find('input[required], textarea[required], select[required]').each(function() {
+                if (!this.checkValidity()) {
+                    this.reportValidity();
+                    isValid = false;
+                    return false; // break the loop
+                }
+            });
+
+            if (!isValid) return;
+
+            // Find the active tab button and show the next tab
+            const activeTabBtn = $('#evo-form-tabs .clinical-step-tab-btn.active');
+            const nextTabBtn = activeTabBtn.closest('li').next('li').find('.clinical-step-tab-btn');
+            if (nextTabBtn.length > 0) {
+                const bootstrapTab = new bootstrap.Tab(nextTabBtn[0]);
+                bootstrapTab.show();
+            }
+        });
+
+        // Programmatic Navigation: Anterior (Prev) button
+        $(document).on('click', '.btn-prev-step', (e) => {
+            e.preventDefault();
+            const activeTabBtn = $('#evo-form-tabs .clinical-step-tab-btn.active');
+            const prevTabBtn = activeTabBtn.closest('li').prev('li').find('.clinical-step-tab-btn');
+            if (prevTabBtn.length > 0) {
+                const bootstrapTab = new bootstrap.Tab(prevTabBtn[0]);
+                bootstrapTab.show();
+            }
+        });
+
+        // Prevent skipping ahead if current tab is invalid (manual tab clicks)
+        $(document).on('show.bs.tab', '#evo-form-tabs button.clinical-step-tab-btn', function (e) {
+            const allTabs = $('#evo-form-tabs .clinical-step-tab-btn');
+            const prevTab = $(e.relatedTarget);
+            const targetTab = $(e.target);
+
+            const prevIndex = allTabs.index(prevTab);
+            const targetIndex = allTabs.index(targetTab);
+
+            // If user attempts to jump ahead
+            if (prevIndex !== -1 && targetIndex > prevIndex) {
+                const currentPane = $('.tab-content .tab-pane.active');
+                let isValid = true;
+                currentPane.find('input[required], textarea[required], select[required]').each(function() {
+                    if (!this.checkValidity()) {
+                        this.reportValidity();
+                        isValid = false;
+                        return false;
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault(); // cancel tab change
+                }
+            }
+        });
+
+        // Visual completion indicators: toggle completed status on prior steps
+        $(document).on('shown.bs.tab', '#evo-form-tabs button.clinical-step-tab-btn', function (e) {
+            const allTabs = $('#evo-form-tabs .clinical-step-tab-btn');
+            const activeIndex = allTabs.index(e.target);
+
+            allTabs.each(function(index) {
+                if (index < activeIndex) {
+                    $(this).addClass('completed');
+                } else {
+                    $(this).removeClass('completed');
+                }
+            });
+        });
+
+        // Dynamic Calculation of Incapacidad Days (Start to End date diff + 1)
+        $(document).on('change input', '#incapacidad_inicio, #incapacidad_fin', () => {
+            const inicioStr = $('#incapacidad_inicio').val();
+            const finStr = $('#incapacidad_fin').val();
+
+            if (inicioStr && finStr) {
+                const inicio = new Date(inicioStr + 'T00:00:00');
+                const fin = new Date(finStr + 'T00:00:00');
+
+                if (fin >= inicio) {
+                    const diffTime = fin - inicio;
+                    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    $('#incapacidad_dias').val(diffDays);
+                } else {
+                    $('#incapacidad_dias').val(0);
+                }
+            } else {
+                // If either is empty, clear the days field
+                $('#incapacidad_dias').val('');
             }
         });
 
