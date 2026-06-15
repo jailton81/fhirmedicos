@@ -676,8 +676,11 @@ class FormHandler {
             const pAllergyStatus = this.api.request('getEstados.php?status=AllergyIntoleranceClinicalStatusCodes', 'GET').catch(err => ({ error: true, data: [] }));
             const pVerif = this.api.request('getEstados.php?status=verificationStatus', 'GET').catch(err => ({ error: true, data: [] }));
             const pMedStatus = this.api.request('getEstados.php?status=MedicationStatusCodes', 'GET').catch(err => ({ error: true, data: [] }));
+            const pHistoryStatus = this.api.request('getEstados.php?status=history-status', 'GET').catch(err => ({ error: true, data: [] }));
 
-            const [resStatus, resAllergyStatus, resVerif, resMedStatus] = await Promise.all([pStatus, pAllergyStatus, pVerif, pMedStatus]);
+            const [resStatus, resAllergyStatus, resVerif, resMedStatus, resHistoryStatus] = await Promise.all([
+                pStatus, pAllergyStatus, pVerif, pMedStatus, pHistoryStatus
+            ]);
 
             if (resStatus && resStatus.status === 'success' && resStatus.data) {
                 // Populate pathological status
@@ -686,11 +689,13 @@ class FormHandler {
                 resStatus.data.forEach(item => {
                     selectEstado.append(new Option(item.display, item.code));
                 });
+            }
 
+            if (resHistoryStatus && resHistoryStatus.status === 'success' && resHistoryStatus.data) {
                 // Populate family history status
                 const selectFamEstado = $('#fam_estado');
                 selectFamEstado.empty();
-                resStatus.data.forEach(item => {
+                resHistoryStatus.data.forEach(item => {
                     selectFamEstado.append(new Option(item.display, item.code));
                 });
             }

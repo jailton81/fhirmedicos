@@ -756,13 +756,23 @@
                                                     </button>
                                                 </li>
                                                 <li class="nav-item" role="presentation">
+                                                    <button class="nav-link clinical-step-tab-btn d-flex align-items-center justify-content-center gap-1.5 fs-8 py-1.5" id="step-laboratorios-tab" data-bs-toggle="pill" data-bs-target="#evo-step-laboratorios" type="button" role="tab" aria-controls="evo-step-laboratorios" aria-selected="false">
+                                                        <span class="step-num">3</span> Laboratorios y Ayudas
+                                                    </button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link clinical-step-tab-btn d-flex align-items-center justify-content-center gap-1.5 fs-8 py-1.5" id="step-analisis-tab" data-bs-toggle="pill" data-bs-target="#evo-step-analisis" type="button" role="tab" aria-controls="evo-step-analisis" aria-selected="false">
+                                                        <span class="step-num">4</span> Análisis
+                                                    </button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
                                                     <button class="nav-link clinical-step-tab-btn d-flex align-items-center justify-content-center gap-1.5 fs-8 py-1.5" id="step-diagnosticos-tab" data-bs-toggle="pill" data-bs-target="#evo-step-diagnosticos" type="button" role="tab" aria-controls="evo-step-diagnosticos" aria-selected="false">
-                                                        <span class="step-num">3</span> Diagnósticos
+                                                        <span class="step-num">5</span> Diagnósticos
                                                     </button>
                                                 </li>
                                                 <li class="nav-item" role="presentation">
                                                     <button class="nav-link clinical-step-tab-btn d-flex align-items-center justify-content-center gap-1.5 fs-8 py-1.5" id="step-plan-tab" data-bs-toggle="pill" data-bs-target="#evo-step-plan" type="button" role="tab" aria-controls="evo-step-plan" aria-selected="false">
-                                                        <span class="step-num">4</span> Plan de Manejo
+                                                        <span class="step-num">6</span> Plan de Manejo
                                                     </button>
                                                 </li>
                                             </ul>
@@ -774,25 +784,21 @@
                                                 <div class="tab-pane fade show active flex-grow-1" id="evo-step-anamnesis" role="tabpanel" aria-labelledby="step-anamnesis-tab" style="overflow: hidden;">
                                                     <div class="flex-grow-1 overflow-y-auto pe-2 scroll-independent">
                                                         <div class="row g-3">
-                                                            <div class="col-md-6">
+                                                            <div class="col-12">
                                                                 <label class="form-label fw-semibold fs-8 text-primary" for="evo_motivo">Motivo de Consulta <span class="text-danger">*</span></label>
-                                                                <textarea class="form-control fs-8" id="evo_motivo" rows="3" placeholder="Ej. Paciente refiere dolor torácico de 2 horas de evolución..." required></textarea>
+                                                                <textarea class="form-control fs-8" id="evo_motivo" rows="2" placeholder="Ej. Paciente refiere dolor torácico de 2 horas de evolución..." required></textarea>
                                                             </div>
-                                                            <div class="col-md-6">
+                                                            <div class="col-12">
                                                                 <label class="form-label fw-semibold fs-8 text-primary" for="evo_enfrmdad">Enfermedad Actual <span class="text-danger">*</span></label>
-                                                                <textarea class="form-control fs-8" id="evo_enfrmdad" rows="3" placeholder="Descripción detallada de la enfermedad actual..." required></textarea>
+                                                                <textarea class="form-control fs-8" id="evo_enfrmdad" rows="2" placeholder="Descripción detallada de la enfermedad actual..." required></textarea>
                                                             </div>
-                                                            <div class="col-md-6">
+                                                            <div class="col-12">
                                                                 <label class="form-label fw-semibold fs-8 text-primary" for="evo_revision_sistemas">Revisión por Sistemas</label>
-                                                                <textarea class="form-control fs-8" id="evo_revision_sistemas" rows="3" placeholder="Síntomas por sistemas corporales..."></textarea>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <label class="form-label fw-semibold fs-8 text-primary" for="evo_lbrtrios">Laboratorios y Paraclínicos <span class="text-danger">*</span></label>
-                                                                <textarea class="form-control fs-8" id="evo_lbrtrios" rows="3" placeholder="Resultados de laboratorios y paraclínicos previos..." required></textarea>
+                                                                <textarea class="form-control fs-8" id="evo_revision_sistemas" rows="2" placeholder="Síntomas por sistemas corporales..."></textarea>
                                                             </div>
                                                             <div class="col-12">
                                                                 <label class="form-label fw-semibold fs-8 text-primary" for="evo_evlcion">Evolución Clínica <span class="text-danger">*</span></label>
-                                                                <textarea class="form-control fs-8" id="evo_evlcion" rows="3" placeholder="Escriba aquí los hallazgos del examen físico y evolución..." required></textarea>
+                                                                <textarea class="form-control fs-8" id="evo_evlcion" rows="2" placeholder="Escriba aquí los hallazgos de la evolución clínica..." required></textarea>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -806,7 +812,6 @@
                                                         </div>
                                                     </div>
                                                 </div>
-
                                                 <!-- TAB 2: Examen Físico -->
                                                 <div class="tab-pane fade flex-grow-1" id="evo-step-examen" role="tabpanel" aria-labelledby="step-examen-tab" style="overflow: hidden;">
                                                     <div class="flex-grow-1 overflow-y-auto pe-2 scroll-independent">
@@ -888,7 +893,49 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- TAB 3: Análisis y Diagnósticos -->
+                                                <!-- TAB 3: Laboratorios y Ayudas Diagnósticas -->
+                                                <div class="tab-pane fade flex-grow-1" id="evo-step-laboratorios" role="tabpanel" aria-labelledby="step-laboratorios-tab" style="overflow: hidden;">
+                                                    <div class="flex-grow-1 overflow-y-auto pe-2 scroll-independent">
+                                                        <div class="row g-3">
+                                                            <div class="col-12">
+                                                                <label class="form-label fw-semibold fs-8 text-primary" for="evo_lbrtrios">Resultados de Exámenes y Laboratorios Aportados por el Paciente <span class="text-danger">*</span></label>
+                                                                <textarea class="form-control fs-8" id="evo_lbrtrios" rows="8" placeholder="Resultados de laboratorios, imágenes diagnósticas u otros exámenes previos..." required></textarea>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-auto">
+                                                        <div class="text-muted small fs-9 fw-semibold">
+                                                            <span class="badge bg-secondary-subtle text-secondary border font-monospace px-2 py-1 fs-9">HL7 FHIR: Observation | ClinicalImpression</span>
+                                                        </div>
+                                                        <div class="d-flex gap-2">
+                                                            <button type="button" class="btn btn-secondary py-1 px-3 fs-8 btn-prev-step">Anterior</button>
+                                                            <button type="button" class="btn btn-sky py-1 px-3 fs-8 btn-next-step">Continuar</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- TAB 4: Análisis Clínico -->
+                                                <div class="tab-pane fade flex-grow-1" id="evo-step-analisis" role="tabpanel" aria-labelledby="step-analisis-tab" style="overflow: hidden;">
+                                                    <div class="flex-grow-1 overflow-y-auto pe-2 scroll-independent">
+                                                        <div class="row g-3">
+                                                            <div class="col-12">
+                                                                <label class="form-label fw-semibold fs-8 text-primary" for="evo_anlsis">Análisis Clínico y Razonamiento Médico <span class="text-danger">*</span></label>
+                                                                <textarea class="form-control fs-8" id="evo_anlsis" rows="8" placeholder="Escriba aquí el análisis clínico, hipótesis diagnósticas y razonamiento médico..." required></textarea>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-auto">
+                                                        <div class="text-muted small fs-9 fw-semibold">
+                                                            <span class="badge bg-secondary-subtle text-secondary border font-monospace px-2 py-1 fs-9">HL7 FHIR: Condition | ClinicalImpression</span>
+                                                        </div>
+                                                        <div class="d-flex gap-2">
+                                                            <button type="button" class="btn btn-secondary py-1 px-3 fs-8 btn-prev-step">Anterior</button>
+                                                            <button type="button" class="btn btn-sky py-1 px-3 fs-8 btn-next-step">Continuar</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- TAB 5: Diagnósticos -->
                                                 <div class="tab-pane fade flex-grow-1" id="evo-step-diagnosticos" role="tabpanel" aria-labelledby="step-diagnosticos-tab" style="overflow: hidden;">
                                                     <div class="flex-grow-1 overflow-y-auto pe-2 scroll-independent">
                                                         <div class="row g-3 mb-3">
@@ -927,13 +974,9 @@
                                                         </div>
 
                                                         <div class="row g-3 mb-1">
-                                                            <div class="col-md-6">
-                                                                <label class="form-label fw-semibold fs-8 text-primary" for="evo_anlsis">Análisis Clínico <span class="text-danger">*</span></label>
-                                                                <textarea class="form-control fs-8" id="evo_anlsis" rows="3" placeholder="Análisis clínico y razonamiento del diagnóstico..." required></textarea>
-                                                            </div>
-                                                            <div class="col-md-6">
+                                                            <div class="col-12">
                                                                 <label class="form-label fw-semibold fs-8 text-primary" for="evo_obsrvciones">Observaciones Generales <span class="text-danger">*</span></label>
-                                                                <textarea class="form-control fs-8" id="evo_obsrvciones" rows="3" placeholder="Observaciones adicionales, alertas o recomendaciones..." required></textarea>
+                                                                <textarea class="form-control fs-8" id="evo_obsrvciones" rows="4" placeholder="Observaciones adicionales, alertas o recomendaciones de los diagnósticos..." required></textarea>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -948,7 +991,7 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- TAB 4: Plan de Manejo -->
+                                                <!-- TAB 6: Plan de Manejo -->
                                                 <div class="tab-pane fade flex-grow-1" id="evo-step-plan" role="tabpanel" aria-labelledby="step-plan-tab" style="overflow: hidden;">
                                                     <div class="flex-grow-1 overflow-y-auto pe-2 scroll-independent">
                                                         <div class="row g-3">
