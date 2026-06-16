@@ -231,6 +231,7 @@ class FormHandler {
         this.api = apiService;
         this.ui = uiService;
         this.storage = storageService;
+        this.selectedDiagnoses = [];
 
         // Instanciar AntecedentesDrawer (Offcanvas)
         this.antecedentesDrawer = new AntecedentesDrawer({
@@ -665,7 +666,75 @@ class FormHandler {
         $('#kpi-pendientes').text('0');
     }
 
+    renderSelectedDiagnoses() {
+        const tbody = $('#list-diagnosticos-seleccionados');
+        if (!tbody.length) return;
+        tbody.empty();
+
+        if (!this.selectedDiagnoses || this.selectedDiagnoses.length === 0) {
+            tbody.append(`
+                <tr id="row-no-diagnoses">
+                    <td colspan="4" class="text-muted text-center py-3 italic">Ningún diagnóstico seleccionado aún.</td>
+                </tr>
+            `);
+            return;
+        }
+
+        this.selectedDiagnoses.forEach((item, index) => {
+            const priorityText = item.indicador === 'principal' ? 'Principal' : 'Relacionado';
+            const typeText = item.tipo === 'impresion_diagnostica' ? 'Impresión Diagnóstica' : 'Confirmado';
+            
+            tbody.append(`
+                <tr>
+                    <td class="ps-3 font-monospace fw-bold text-secondary">${item.code}</td>
+                    <td class="text-dark fw-medium">${item.display}</td>
+                    <td>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1" style="font-size: 0.75rem;">${priorityText}</span>
+                        <span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.75rem;">${typeText}</span>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-link text-danger py-0 btn-delete-diag" data-index="${index}" title="Eliminar diagnóstico" style="box-shadow: none;">
+                            <i class="bi bi-trash fs-6"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    addDiagnosis(code, display) {
+        const indicator = $('#evo_indicador_diagnostico').val() || 'principal';
+        const tipo = $('#evo_tipo_diagnostico').val() || 'impresion_diagnostica';
+
+        // Check if already exists
+        if (this.selectedDiagnoses.some(d => d.code === code)) {
+            this.ui.showToast(`El diagnóstico ${code} ya está seleccionado.`, 'warning');
+            return;
+        }
+
+        // If trying to add a second 'principal' diagnosis, show warning
+        if (indicator === 'principal' && this.selectedDiagnoses.some(d => d.indicador === 'principal')) {
+            this.ui.showToast('Nota: Ya existe un diagnóstico principal seleccionado.', 'info');
+        }
+
+        this.selectedDiagnoses.push({
+            code: code,
+            display: display,
+            indicador: indicator,
+            tipo: tipo
+        });
+
+        this.renderSelectedDiagnoses();
+    }
+
+    removeDiagnosis(index) {
+        this.selectedDiagnoses.splice(index, 1);
+        this.renderSelectedDiagnoses();
+    }
+
     async loadPatientHistory(pacienteId) {
+        this.selectedDiagnoses = [];
+        this.renderSelectedDiagnoses();
 
         // Show loading status in the sidebar cards and panel containers
         $('#list-patologicos-existentes').html('<div class="text-muted fs-8.5 text-center py-1"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Cargando...</div>');
@@ -1321,6 +1390,73 @@ class FormHandler {
                 badgesContainer.append(`<span class="risk-tag-badge" style="background-color: #d1fae5 !important; color: #065f46 !important;"><i class="bi bi-shield-check me-1"></i>Bajo Riesgo</span>`);
             }
         }
+
+        // --- Signos de Alarma / Alertas Críticas (Banderas Rojas) ---
+        let criticalAlerts = [];
+
+        // 1. Alergias Críticas (AllergyIntolerance)
+        if (allergies.length > 0) {
+            const criticalAllergiesList = allergies
+                .filter(a => a.criticidad === 'high' || a.criticality === 'high' || a.estado === 'active' || a.clinicalStatus === 'active')
+                .map(a => a.descripcion || 'Alérgeno');
+            
+            if (criticalAllergiesList.length > 0) {
+                criticalAlerts.push(`<i class="bi bi-x-circle-fill text-danger me-1"></i>Alergia crítica a: <strong>${criticalAllergiesList.join(', ')}</strong>`);
+            }
+        }
+
+        // 2. Banderas Rojas Diagnósticas (Conditions / Timeline Diagnoses)
+        let highRiskKeywords = [
+            { words: ['sepsis', 'shock', 'choque', 'séptico', 'septicemia'], label: 'Criterio de sepsis / shock previo' },
+            { words: ['sangrado', 'hemorragia', 'coagulopatía', 'hemofilia'], label: 'Riesgo de sangrado activo' },
+            { words: ['isquémico', 'infarto', 'angina', 'isquemia', 'coronario'], label: 'Riesgo coronario / isquemia aguda' },
+            { words: ['suicidio', 'suicida', 'autolesión'], label: 'Riesgo de autolesión / ideación suicida' },
+            { words: ['epidem', 'brote', 'contagioso', 'tuberculosis', 'covid-19', 'dengue grave'], label: 'Alerta epidemiológica / aislamiento' }
+        ];
+
+        allDiagTexts.forEach(desc => {
+            highRiskKeywords.forEach(item => {
+                if (item.words.some(word => desc.includes(word))) {
+                    if (!criticalAlerts.some(alert => alert.includes(item.label))) {
+                        criticalAlerts.push(`<i class="bi bi-exclamation-circle-fill text-danger me-1"></i>${item.label}`);
+                    }
+                }
+            });
+        });
+
+        // 3. Signos Vitales Críticos del último encuentro
+        if (timeline.length > 0) {
+            const sortedTimeline = [...timeline].sort((a, b) => parseInt(b.cnsctvo_pcnte) - parseInt(a.cnsctvo_pcnte));
+            const latest = sortedTimeline[0];
+            
+            if (latest.tmprtra) {
+                const tempVal = parseFloat(latest.tmprtra);
+                if (tempVal >= 38.3) {
+                    criticalAlerts.push(`<i class="bi bi-thermometer-high text-danger me-1"></i>Hipertermia / Fiebre: <strong>${tempVal} °C</strong>`);
+                } else if (tempVal <= 35.0) {
+                    criticalAlerts.push(`<i class="bi bi-thermometer-low text-danger me-1"></i>Hipotermia: <strong>${tempVal} °C</strong>`);
+                }
+            }
+            
+            if (latest.plso || latest.spo2) {
+                const spo2Val = parseInt(latest.plso || latest.spo2, 10);
+                if (spo2Val < 92) {
+                    criticalAlerts.push(`<i class="bi bi-wind text-danger me-1"></i>Desaturación severa: <strong>SPO2 ${spo2Val}%</strong>`);
+                }
+            }
+        }
+
+        // Render alertas
+        const panelAlertas = $('#panel-alertas-criticas');
+        const listAlertas = $('#list-alertas-criticas');
+        
+        if (criticalAlerts.length > 0) {
+            listAlertas.html(`<ul class="mb-0 ps-3 text-danger-emphasis">${criticalAlerts.map(a => `<li>${a}</li>`).join('')}</ul>`);
+            panelAlertas.removeClass('d-none');
+        } else {
+            listAlertas.html('<span class="text-muted">Sin alertas activas.</span>');
+            panelAlertas.addClass('d-none');
+        }
     }
 
     formatMockupDate(dateStr) {
@@ -1601,6 +1737,14 @@ class FormHandler {
         this.executeFormAction('#form-evolucion-diaria', '#view-clinical-panel', async () => {
             const user = this.storage.getUser();
             
+            if (!this.selectedDiagnoses || this.selectedDiagnoses.length === 0) {
+                throw new Error('Debe seleccionar al menos un diagnóstico antes de firmar y evolucionar.');
+            }
+
+            // Find principal or first diagnosis for history record
+            const principalDiag = this.selectedDiagnoses.find(d => d.indicador === 'principal') || this.selectedDiagnoses[0];
+            const diagDefVal = principalDiag ? `${principalDiag.code} - ${principalDiag.display}` : '';
+
             // Append Revisión por Sistemas to Observaciones if filled
             let obs = $('#evo_obsrvciones').length > 0 && $('#evo_obsrvciones').val() ? $('#evo_obsrvciones').val().trim() : '';
             const revSist = $('#evo_revision_sistemas').length > 0 && $('#evo_revision_sistemas').val() ? $('#evo_revision_sistemas').val().trim() : '';
@@ -1617,7 +1761,7 @@ class FormHandler {
                 lbrtrios: $('#evo_lbrtrios').length > 0 && $('#evo_lbrtrios').val() ? $('#evo_lbrtrios').val().trim() : null,
                 anlsis: $('#evo_anlsis').length > 0 && $('#evo_anlsis').val() ? $('#evo_anlsis').val().trim() : null,
                 observaciones: obs ? obs : null,
-                diagnostico_definitivo: $('#evo_diagnostico_definitivo').length > 0 && $('#evo_diagnostico_definitivo').val() ? $('#evo_diagnostico_definitivo').val().trim() : null,
+                diagnostico_definitivo: diagDefVal || null,
                 plan: $('#evo_plan').length > 0 && $('#evo_plan').val() ? $('#evo_plan').val().trim() : null,
                 pso: ($('#evo_pso').length > 0 && $('#evo_pso').val()) ? $('#evo_pso').val().toString() : null,
                 tlla: ($('#evo_tlla').length > 0 && $('#evo_tlla').val()) ? parseFloat($('#evo_tlla').val()) : null,
@@ -1635,26 +1779,22 @@ class FormHandler {
             if (response.status === 'success') {
                 const cnsctvo = response.cnsctvo_pcnte;
 
-                // 1. Save Diagnosis details to DIAGNOSTICOS_HC table
-                const diagDef = $('#evo_diagnostico_definitivo').val() ? $('#evo_diagnostico_definitivo').val().trim() : '';
-                if (diagDef) {
-                    const parts = diagDef.split(' - ');
-                    const code = parts[0] ? parts[0].trim() : 'GENERIC';
-                    const desc = parts[1] ? parts[1].trim() : diagDef;
-                    
+                // 1. Save all selected diagnoses to DIAGNOSTICOS_HC table
+                for (const item of this.selectedDiagnoses) {
                     const diagPayload = {
                         id_pcnte: pacienteId,
                         cnsctvo_pcnte: cnsctvo,
-                        codigo: code,
-                        cie_10: code,
-                        descripcion: desc,
+                        codigo: item.code,
+                        cie_10: item.code,
+                        descripcion: item.display,
                         estado: 'active',
                         estado_verificacion: 'confirmed',
-                        indicador_diagnostico: $('#evo_indicador_diagnostico').val() ? $('#evo_indicador_diagnostico').val() : 'principal',
-                        tipo_diagnostico: $('#evo_tipo_diagnostico').val() ? $('#evo_tipo_diagnostico').val() : 'impresion_diagnostica',
+                        indicador_diagnostico: item.indicador,
+                        tipo_diagnostico: item.tipo,
                         usuario_ingreso: user ? user.id : 'API'
                     };
-                    await this.api.request('createDiagnosticoHC.php', 'POST', diagPayload).catch(err => console.error("Error creating DiagnosticoHC:", err));
+                    await this.api.request('createDiagnosticoHC.php', 'POST', diagPayload)
+                        .catch(err => console.error("Error creating DiagnosticoHC:", err));
                 }
 
                 // 2. Save new Formulation (MedicationRequest) to FORMULACION table
@@ -1758,17 +1898,17 @@ class FormHandler {
 // 5. COORDINATOR / APP ENTRY POINT
 // =========================================================================
 const CIE10_DICTIONARY = [
-    { code: 'I10', desc: 'Hipertensión esencial (primaria)' },
-    { code: 'E11', desc: 'Diabetes mellitus no insulinodependiente' },
-    { code: 'J45', desc: 'Asma' },
-    { code: 'K21', desc: 'Enfermedad por reflujo gastroesofágico' },
-    { code: 'M54', desc: 'Dorsalgia' },
-    { code: 'J00', desc: 'Rinofaringitis aguda (resfriado común)' },
-    { code: 'U07.1', desc: 'COVID-19, virus identificado' },
-    { code: 'N39.0', desc: 'Infección de vías urinarias, sitio no especificado' },
-    { code: 'K29', desc: 'Gastritis y duodenitis' },
-    { code: 'R51', desc: 'Cefalea' },
-    { code: 'E66', desc: 'Obesidad' },
+    { code: 'I10X', desc: 'HIPERTENSION ESENCIAL (PRIMARIA)' },
+    { code: 'E119', desc: 'DIABETES MELLITUS NO INSULINODEPENDIENTE, SIN MENCION DE COMPLICACION' },
+    { code: 'J459', desc: 'ASMA, NO ESPECIFICADA' },
+    { code: 'K219', desc: 'ENFERMEDAD POR REFLUJO GASTROESOFAGICO SIN ESOFAGITIS' },
+    { code: 'M545', desc: 'LUMBAGO NO ESPECIFICADO' },
+    { code: 'J00X', desc: 'RINOFARINGITIS AGUDA [RESFRIADO COMUN]' },
+    { code: 'U071', desc: 'COVID-19, VIRUS IDENTIFICADO' },
+    { code: 'N390', desc: 'INFECCION DE VIAS URINARIAS, SITIO NO ESPECIFICADO' },
+    { code: 'K297', desc: 'GASTRITIS, NO ESPECIFICADA' },
+    { code: 'R51X', desc: 'CEFALEA' },
+    { code: 'E669', desc: 'OBESIDAD, NO ESPECIFICADA' },
     { code: 'M25.5', desc: 'Dolor en articulación' },
     { code: 'F41.1', desc: 'Ansiedad generalizada' },
     { code: 'F32', desc: 'Episodio depresivo' },
@@ -1927,51 +2067,123 @@ class App {
             }
         });
 
-        // Diagnóstico CIE-10 autocomplete search
-        $('#search-cie10-input').on('input', function() {
-            const query = $(this).val().trim().toLowerCase();
+        // Diagnóstico CIE-10 autocomplete search with Debounce and min-length check
+        let searchCie10Timeout = null;
+        $('#search-cie10-input').on('input', (e) => {
+            const query = $(e.target).val().trim();
             const dropdown = $('#search-cie10-dropdown');
-            dropdown.empty();
+            const listContainer = $('#search-cie10-list');
 
-            if (!query) {
+            if (searchCie10Timeout) {
+                clearTimeout(searchCie10Timeout);
+            }
+
+            if (query.length < 3) {
+                listContainer.empty();
                 dropdown.addClass('d-none');
                 return;
             }
 
-            const filtered = CIE10_DICTIONARY.filter(item => 
-                item.code.toLowerCase().includes(query) || 
-                item.desc.toLowerCase().includes(query)
-            );
+            searchCie10Timeout = setTimeout(async () => {
+                listContainer.empty();
+                listContainer.append('<div class="list-group-item text-muted text-center fs-8 py-2"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Buscando...</div>');
+                dropdown.removeClass('d-none');
 
-            if (filtered.length > 0) {
-                filtered.forEach(item => {
-                    dropdown.append(`
-                        <button type="button" class="list-group-item list-group-item-action cie10-item text-start" data-code="${item.code}" data-desc="${item.desc}">
-                            <strong>${item.code}</strong> - ${item.desc}
-                        </button>
-                    `);
-                });
-                dropdown.removeClass('d-none');
-            } else {
-                dropdown.append('<div class="list-group-item text-muted text-center fs-8">Sin resultados</div>');
-                dropdown.removeClass('d-none');
-            }
+                try {
+                    // Query database via API
+                    const res = await this.api.request(`getCIE10.php?search=${encodeURIComponent(query)}`, 'GET');
+                    
+                    let results = [];
+                    if (res && res.status === 'success' && res.data && res.data.length > 0) {
+                        results = res.data;
+                    } else {
+                        // Fallback to local dictionary
+                        const queryLower = query.toLowerCase();
+                        results = CIE10_DICTIONARY.filter(item => 
+                            item.code.toLowerCase().includes(queryLower) || 
+                            item.desc.toLowerCase().includes(queryLower)
+                        ).map(item => ({
+                            code: item.code,
+                            display: item.desc
+                        })).slice(0, 15);
+                    }
+
+                    listContainer.empty();
+                    if (results.length > 0) {
+                        results.forEach(item => {
+                            listContainer.append(`
+                                <button type="button" class="list-group-item list-group-item-action cie10-item text-start d-flex align-items-center p-2" data-code="${item.code}" data-desc="${item.display}">
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis me-2 fs-8.5 font-monospace" style="min-width: 60px;">${item.code}</span>
+                                    <span class="small text-truncate" title="${item.display}">${item.display}</span>
+                                </button>
+                            `);
+                        });
+                    } else {
+                        listContainer.append('<div class="list-group-item text-muted text-center fs-8 py-2">Sin resultados</div>');
+                    }
+                } catch (error) {
+                    console.error("Error fetching CIE10 from API, falling back to local dictionary:", error);
+                    
+                    // Fallback to local dictionary
+                    const queryLower = query.toLowerCase();
+                    const localResults = CIE10_DICTIONARY.filter(item => 
+                        item.code.toLowerCase().includes(queryLower) || 
+                        item.desc.toLowerCase().includes(queryLower)
+                    ).map(item => ({
+                        code: item.code,
+                        display: item.desc
+                    })).slice(0, 15);
+
+                    listContainer.empty();
+                    if (localResults.length > 0) {
+                        localResults.forEach(item => {
+                            listContainer.append(`
+                                <button type="button" class="list-group-item list-group-item-action cie10-item text-start d-flex align-items-center p-2" data-code="${item.code}" data-desc="${item.display}">
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis me-2 fs-8.5 font-monospace" style="min-width: 60px;">${item.code}</span>
+                                    <span class="small text-truncate" title="${item.display}">${item.display}</span>
+                                </button>
+                            `);
+                        });
+                    } else {
+                        listContainer.append('<div class="list-group-item text-muted text-center fs-8 py-2">Sin resultados</div>');
+                    }
+                }
+            }, 300);
         });
 
         // Selección de diagnóstico
-        $(document).on('click', '.cie10-item', function(e) {
+        $(document).on('click', '.cie10-item', (e) => {
             e.preventDefault();
-            const code = $(this).data('code');
-            const desc = $(this).data('desc');
+            const btn = $(e.target).closest('.cie10-item');
+            const code = btn.data('code');
+            const desc = btn.data('desc');
 
-            $('#evo_diagnostico_definitivo').val(code + ' - ' + desc);
+            this.formHandler.addDiagnosis(code, desc);
             
             $('#search-cie10-input').val('');
             $('#search-cie10-dropdown').addClass('d-none');
         });
 
+        // Favoritos / Frecuentes click handler
+        $(document).on('click', '.badge-frecuente-cie10', (e) => {
+            e.preventDefault();
+            const code = $(e.currentTarget).data('code');
+            const desc = $(e.currentTarget).data('desc');
+            
+            this.formHandler.addDiagnosis(code, desc);
+        });
+
+        // Eliminar diagnóstico de la tabla
+        $(document).on('click', '.btn-delete-diag', (e) => {
+            e.preventDefault();
+            const btn = $(e.target).closest('.btn-delete-diag');
+            const index = parseInt(btn.data('index'), 10);
+            
+            this.formHandler.removeDiagnosis(index);
+        });
+
         // Ocultar dropdown al hacer clic fuera
-        $(document).on('click', function(e) {
+        $(document).on('click', (e) => {
             if (!$(e.target).closest('#search-cie10-input, #search-cie10-dropdown').length) {
                 $('#search-cie10-dropdown').addClass('d-none');
             }

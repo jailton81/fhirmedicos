@@ -362,6 +362,18 @@
                     <button type="button" class="btn btn-primary w-100 px-3 py-2 fw-bold fs-6" id="btn-open-fhir-drawer" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAntecedentesFHIR">
                         <i class="bi bi-file-earmark-medical me-2"></i>📋 Ver Antecedentes Completos
                     </button>
+                    
+                    <!-- Signos de Alarma / Alertas Críticas (Banderas Rojas) -->
+                    <div id="panel-alertas-criticas" class="card bg-danger-subtle border-danger-subtle mt-2 p-2 d-none">
+                        <div class="d-flex flex-column gap-1">
+                            <span class="fw-bold text-danger small" style="font-size: 0.75rem;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>SIGNOS DE ALARMA / ALERTAS:
+                            </span>
+                            <div id="list-alertas-criticas" class="text-danger-emphasis small" style="font-size: 0.72rem; line-height: 1.3; font-family: 'Inter', sans-serif;">
+                                <span class="text-muted">Sin alertas activas.</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Active Diagnoses Summary -->
@@ -482,237 +494,8 @@
                     <div id="tab-records" class="clinical-tab-content d-none h-100 bg-light" style="overflow: hidden;">
                         <div class="container-fluid py-3 h-100 d-flex flex-column" style="overflow: hidden;">
                             <div class="row g-4 flex-grow-1" style="overflow: hidden;">
-                                <!-- Left Column: Accordion Backgrounds -->
-                                <div class="col-lg-5 col-xl-4 h-100">
-                                    <div class="card border rounded-3 p-3 shadow-sm bg-white h-100 scroll-independent" id="panel-antecedentes-card">
-                                        <h5 class="fw-bold mb-3 text-dark fs-6" style="font-family: 'Inter', sans-serif;">Antecedentes del Paciente</h5>
-                                        
-                                        <div class="accordion" id="accordionAntecedentes">
-                                            
-                                            <!-- Accordion Item: Patológicos -->
-                                            <div class="accordion-item">
-                                                <h2 class="accordion-header" id="headingPatologico">
-                                                    <button class="accordion-button py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePatologico" aria-expanded="true" aria-controls="collapsePatologico">
-                                                        <i class="bi bi-heart-pulse text-danger me-2 fs-7.5"></i>Patológicos
-                                                    </button>
-                                                </h2>
-                                                <div id="collapsePatologico" class="accordion-collapse collapse show" aria-labelledby="headingPatologico" data-bs-parent="#accordionAntecedentes">
-                                                    <div class="accordion-body p-2.5">
-                                                        <div id="list-patologicos-existentes" class="mb-3 border rounded-2 p-2 bg-light scroll-independent" style="max-height: 120px; overflow-y: auto;">
-                                                            <!-- Dynamic -->
-                                                        </div>
-                                                        <form id="form-patologico" class="border-top pt-2">
-                                                            <div class="fw-bold text-primary fs-8.5 mb-1.5"><i class="bi bi-plus-circle me-1"></i>Registrar Patología</div>
-                                                            <div class="row g-2">
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="pat_cie10">CIE-10</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8 font-monospace" id="pat_cie10" placeholder="Ej: I10">
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="pat_edad">Edad Diag.</label>
-                                                                    <input type="number" class="form-control py-0.5 px-2 fs-8" id="pat_edad" placeholder="Años">
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <label class="form-label fs-9 mb-0.5" for="pat_descripcion">Descripción</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="pat_descripcion" placeholder="Ej: Hipertensión Arterial" required>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="pat_estado">Estado</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="pat_estado">
-                                                                        <option value="active" selected>Activo</option>
-                                                                        <option value="inactive">Inactivo</option>
-                                                                        <option value="resolved">Resuelto</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="pat_verif">Verificación</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="pat_verif">
-                                                                        <option value="confirmed" selected>Confirmado</option>
-                                                                        <option value="unconfirmed">Sin Confirmar</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <label class="form-label fs-9 mb-0.5" for="pat_observaciones">Observaciones</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="pat_observaciones" placeholder="Detalles adicionales...">
-                                                                </div>
-                                                                <input type="hidden" id="pat_cie11" value="">
-                                                                <input type="hidden" id="pat_codigo" value="">
-                                                                <div class="col-12 text-end">
-                                                                    <button type="submit" class="btn btn-sky py-0.5 px-2.5 fs-9"><i class="bi bi-save me-1"></i>Guardar</button>
-                                                                </div>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Accordion Item: Farmacológicos -->
-                                            <div class="accordion-item">
-                                                <h2 class="accordion-header" id="headingFarmaco">
-                                                    <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFarmaco" aria-expanded="false" aria-controls="collapseFarmaco">
-                                                        <i class="bi bi-capsule text-success me-2 fs-7.5"></i>Farmacológicos
-                                                    </button>
-                                                </h2>
-                                                <div id="collapseFarmaco" class="accordion-collapse collapse" aria-labelledby="headingFarmaco" data-bs-parent="#accordionAntecedentes">
-                                                    <div class="accordion-body p-2.5">
-                                                        <div id="list-farmacos-existentes" class="mb-3 border rounded-2 p-2 bg-light scroll-independent" style="max-height: 120px; overflow-y: auto;">
-                                                            <!-- Dynamic -->
-                                                        </div>
-                                                        <form id="form-farmaco" class="border-top pt-2">
-                                                            <div class="fw-bold text-primary fs-8.5 mb-1.5"><i class="bi bi-plus-circle me-1"></i>Registrar Medicamento</div>
-                                                            <div class="row g-2">
-                                                                <div class="col-7">
-                                                                    <label class="form-label fs-9 mb-0.5" for="far_descripcion">Medicamento</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="far_descripcion" placeholder="Ej: Losartán 50mg" required>
-                                                                </div>
-                                                                <div class="col-5">
-                                                                    <label class="form-label fs-9 mb-0.5" for="far_codigo">Código</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8 font-monospace" id="far_codigo" placeholder="Ej: C09CA01">
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="far_estado">Estado</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="far_estado">
-                                                                        <option value="active" selected>Activo</option>
-                                                                        <option value="completed">Completado</option>
-                                                                        <option value="stopped">Suspendido</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <label class="form-label fs-9 mb-0.5" for="far_observaciones">Indicaciones</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="far_observaciones" placeholder="Ej: 1 tableta diaria">
-                                                                </div>
-                                                                <div class="col-12 text-end">
-                                                                    <button type="submit" class="btn btn-sky py-0.5 px-2.5 fs-9"><i class="bi bi-save me-1"></i>Guardar</button>
-                                                                </div>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Accordion Item: Familiares -->
-                                            <div class="accordion-item">
-                                                <h2 class="accordion-header" id="headingFamiliar">
-                                                    <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFamiliar" aria-expanded="false" aria-controls="collapseFamiliar">
-                                                        <i class="bi bi-people text-info me-2 fs-7.5"></i>Familiares
-                                                    </button>
-                                                </h2>
-                                                <div id="collapseFamiliar" class="accordion-collapse collapse" aria-labelledby="headingFamiliar" data-bs-parent="#accordionAntecedentes">
-                                                    <div class="accordion-body p-2.5">
-                                                        <div id="list-familiares-existentes" class="mb-3 border rounded-2 p-2 bg-light scroll-independent" style="max-height: 120px; overflow-y: auto;">
-                                                            <!-- Dynamic -->
-                                                        </div>
-                                                        <form id="form-familiar" class="border-top pt-2">
-                                                            <div class="fw-bold text-primary fs-8.5 mb-1.5"><i class="bi bi-plus-circle me-1"></i>Registrar Familiar</div>
-                                                            <div class="row g-2">
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="fam_parentesco">Parentesco</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="fam_parentesco">
-                                                                        <option value="01" selected>Padres</option>
-                                                                        <option value="02">Hermanos</option>
-                                                                        <option value="03">Tíos</option>
-                                                                        <option value="04">Abuelos</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="fam_cie10">CIE-10</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8 font-monospace" id="fam_cie10" placeholder="Ej: I10">
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="fam_edad">Edad Diag.</label>
-                                                                    <input type="number" class="form-control py-0.5 px-2 fs-8" id="fam_edad" placeholder="Años">
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="fam_estado">Estado</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="fam_estado">
-                                                                        <option value="completed" selected>Completado</option>
-                                                                        <option value="active">Activo</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <label class="form-label fs-9 mb-0.5" for="fam_descripcion">Patología / Descripción</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="fam_descripcion" placeholder="Ej: Diabetes Tipo II" required>
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <label class="form-label fs-9 mb-0.5" for="fam_observaciones">Observaciones</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="fam_observaciones" placeholder="Detalles...">
-                                                                </div>
-                                                                <input type="hidden" id="fam_cie11" value="">
-                                                                <input type="hidden" id="fam_codigo" value="">
-                                                                <div class="col-12 text-end">
-                                                                    <button type="submit" class="btn btn-sky py-0.5 px-2.5 fs-9"><i class="bi bi-save me-1"></i>Guardar</button>
-                                                                </div>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Accordion Item: Alérgicos -->
-                                            <div class="accordion-item">
-                                                <h2 class="accordion-header" id="headingAlergico">
-                                                    <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAlergico" aria-expanded="false" aria-controls="collapseAlergico">
-                                                        <i class="bi bi-exclamation-triangle text-warning me-2 fs-7.5"></i>Alérgicos
-                                                    </button>
-                                                </h2>
-                                                <div id="collapseAlergico" class="accordion-collapse collapse" aria-labelledby="headingAlergico" data-bs-parent="#accordionAntecedentes">
-                                                    <div class="accordion-body p-2.5">
-                                                        <div id="list-alergicos-existentes" class="mb-3 border rounded-2 p-2 bg-light scroll-independent" style="max-height: 120px; overflow-y: auto;">
-                                                            <!-- Dynamic -->
-                                                        </div>
-                                                        <form id="form-alergico" class="border-top pt-2">
-                                                            <div class="fw-bold text-primary fs-8.5 mb-1.5"><i class="bi bi-plus-circle me-1"></i>Registrar Alergia</div>
-                                                            <div class="row g-2">
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_tipo">Tipo</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="ale_tipo">
-                                                                        <option value="01" selected>Medicamento</option>
-                                                                        <option value="02">Alimento</option>
-                                                                        <option value="03">Sustancia Ambiental</option>
-                                                                        <option value="04">Contacto dérmico</option>
-                                                                        <option value="05">Picadura de insecto</option>
-                                                                        <option value="06">Otra</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_estado">Estado</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="ale_estado">
-                                                                        <option value="active" selected>Activo</option>
-                                                                        <option value="inactive">Inactivo</option>
-                                                                        <option value="resolved">Resuelto</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_descripcion">Alergeno / Descripción</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="ale_descripcion" placeholder="Ej: Penicilina, Nueces" required>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_verif">Verificación</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="ale_verif">
-                                                                        <option value="confirmed" selected>Confirmado</option>
-                                                                        <option value="unconfirmed">Sin Confirmar</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_observaciones">Observaciones</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="ale_observaciones" placeholder="Detalles...">
-                                                                </div>
-                                                                <input type="hidden" id="ale_codigo" value="">
-                                                                <div class="col-12 text-end">
-                                                                    <button type="submit" class="btn btn-sky py-0.5 px-2.5 fs-9"><i class="bi bi-save me-1"></i>Guardar</button>
-                                                                </div>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Right Column: Daily Evolution Form -->
-                                <div class="col-lg-7 col-xl-8 h-100">
+                                <!-- Central Column: Daily Evolution Form -->
+                                <div class="col-12 h-100">
                                     <div class="card border rounded-3 p-4 shadow-sm bg-white h-100 d-flex flex-column">
                                         <h5 class="fw-bold mb-3 text-dark fs-6" style="font-family: 'Inter', sans-serif;">Evolución Clínica Diaria</h5>
                                         
@@ -912,45 +695,77 @@
                                                 <!-- TAB 5: Diagnósticos -->
                                                 <div class="tab-pane fade flex-grow-1" id="evo-step-diagnosticos" role="tabpanel" aria-labelledby="step-diagnosticos-tab" style="overflow: hidden;">
                                                     <div class="flex-grow-1 overflow-y-auto pe-2 scroll-independent">
-                                                        <div class="row g-3 mb-3">
+                                                        <div class="row g-3 mb-3 align-items-end">
+                                                            <!-- 1. COMPONENTE DE BÚSQUEDA (Input Group) -->
                                                             <div class="col-md-6 position-relative">
-                                                                <label class="form-label fw-semibold fs-8 text-primary" for="search-cie10-input">Buscar Diagnóstico CIE-10 / CIE-11</label>
-                                                                <div class="input-group input-group-sm mb-2">
-                                                                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                                                                    <input type="text" class="form-control ps-1" id="search-cie10-input" placeholder="Buscar por código o descripción...">
+                                                                <label class="form-label fw-semibold fs-8 text-primary" for="search-cie10-input">Buscar Diagnóstico CIE-10</label>
+                                                                <div class="input-group input-group-sm">
+                                                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                                                    <input type="text" class="form-control form-control-sm border-start-0 ps-1 fs-8" id="search-cie10-input" placeholder="Busque por código CIE-10 o descripción..." autocomplete="off">
                                                                 </div>
-                                                                <!-- Dropdown Results -->
-                                                                <div id="search-cie10-dropdown" class="list-group position-absolute w-100 mt-1 d-none overflow-y-auto" style="max-height: 180px; z-index: 1000;">
-                                                                    <!-- Injected dynamically -->
+                                                                <!-- 2. PANEL DE RESULTADOS PREDICTIVOS (Dropdown/List-Group) -->
+                                                                <div id="search-cie10-dropdown" class="position-absolute w-100 shadow-sm z-3 bg-white border rounded d-none overflow-y-auto" style="max-height: 180px; z-index: 1000; left: 0; right: 0;">
+                                                                    <div class="list-group list-group-flush" id="search-cie10-list">
+                                                                        <!-- Injected dynamically -->
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-6">
-                                                                <label class="form-label fw-semibold fs-8 text-primary" for="evo_diagnostico_definitivo">Diagnóstico Seleccionado <span class="text-danger">*</span></label>
-                                                                <input type="text" class="form-control fs-8 bg-light text-truncate" id="evo_diagnostico_definitivo" placeholder="Ningún diagnóstico seleccionado..." required readonly style="height: 31px;">
-                                                            </div>
-                                                        </div>
-
-                                                        <div class="row g-3 mb-3">
-                                                            <div class="col-md-6">
+                                                            
+                                                            <!-- 3. CONFIGURACIÓN DEL DIAGNÓSTICO (Prioridad y Tipo) -->
+                                                            <div class="col-6 col-md-3">
                                                                 <label class="form-label fw-semibold fs-8 text-primary" for="evo_indicador_diagnostico">Prioridad del Diagnóstico</label>
-                                                                <select class="form-select fs-8 py-1.5" id="evo_indicador_diagnostico">
+                                                                <select class="form-select form-select-sm fs-8 py-1" id="evo_indicador_diagnostico">
                                                                     <option value="principal" selected>Diagnóstico Principal</option>
-                                                                    <option value="secundario">Diagnóstico Secundario</option>
+                                                                    <option value="secundario">Diagnóstico Relacionado</option>
                                                                 </select>
                                                             </div>
-                                                            <div class="col-md-6">
+                                                            <div class="col-6 col-md-3">
                                                                 <label class="form-label fw-semibold fs-8 text-primary" for="evo_tipo_diagnostico">Tipo de Diagnóstico</label>
-                                                                <select class="form-select fs-8 py-1.5" id="evo_tipo_diagnostico">
+                                                                <select class="form-select form-select-sm fs-8 py-1" id="evo_tipo_diagnostico">
                                                                     <option value="impresion_diagnostica" selected>Impresión Diagnóstica</option>
                                                                     <option value="confirmado">Confirmado</option>
                                                                 </select>
                                                             </div>
                                                         </div>
 
+                                                        <!-- 3. BLOQUE DE DIAGNÓSTICOS FRECUENTES (Favoritos) -->
+                                                        <div class="mb-3 px-1">
+                                                            <span class="text-muted text-xs d-block mb-1.5" style="font-size: 0.7rem;">Frecuentes:</span>
+                                                            <div class="d-flex flex-wrap gap-1.5" id="frecuentes-cie10-container">
+                                                                <span class="badge bg-light text-dark border cursor-pointer badge-frecuente-cie10 py-1.5 px-2 fs-8.5" data-code="I10X" data-desc="HIPERTENSION ESENCIAL (PRIMARIA)"><strong class="text-secondary">[I10X]</strong> HTA</span>
+                                                                <span class="badge bg-light text-dark border cursor-pointer badge-frecuente-cie10 py-1.5 px-2 fs-8.5" data-code="E119" data-desc="DIABETES MELLITUS NO INSULINODEPENDIENTE, SIN MENCION DE COMPLICACION"><strong class="text-secondary">[E119]</strong> Diabetes Tipo 2</span>
+                                                                <span class="badge bg-light text-dark border cursor-pointer badge-frecuente-cie10 py-1.5 px-2 fs-8.5" data-code="J00X" data-desc="RINOFARINGITIS AGUDA [RESFRIADO COMUN]"><strong class="text-secondary">[J00X]</strong> Rinofaringitis</span>
+                                                                <span class="badge bg-light text-dark border cursor-pointer badge-frecuente-cie10 py-1.5 px-2 fs-8.5" data-code="M545" data-desc="LUMBAGO NO ESPECIFICADO"><strong class="text-secondary">[M545]</strong> Lumbago</span>
+                                                                <span class="badge bg-light text-dark border cursor-pointer badge-frecuente-cie10 py-1.5 px-2 fs-8.5" data-code="K297" data-desc="GASTRITIS, NO ESPECIFICADA"><strong class="text-secondary">[K297]</strong> Gastritis</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- 4. TABLA DE DIAGNÓSTICOS SELECCIONADOS (Resultado final) -->
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-semibold fs-8 text-primary">Diagnósticos Seleccionados para esta Consulta</label>
+                                                            <div class="table-responsive border rounded bg-white">
+                                                                <table class="table table-sm align-middle table-hover mb-0 small" id="table-diagnosticos-seleccionados" style="font-size: 0.8rem;">
+                                                                    <thead class="table-light text-muted" style="font-size: 0.75rem;">
+                                                                        <tr>
+                                                                            <th scope="col" style="width: 15%;" class="ps-3">Código</th>
+                                                                            <th scope="col" style="width: 45%;">Descripción</th>
+                                                                            <th scope="col" style="width: 30%;">Tipo de Diagnóstico</th>
+                                                                            <th scope="col" style="width: 10%;" class="text-center">Eliminar</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody id="list-diagnosticos-seleccionados">
+                                                                        <tr id="row-no-diagnoses">
+                                                                            <td colspan="4" class="text-muted text-center py-3 italic">Ningún diagnóstico seleccionado aún.</td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+
                                                         <div class="row g-3 mb-1">
                                                             <div class="col-12">
                                                                 <label class="form-label fw-semibold fs-8 text-primary" for="evo_obsrvciones">Observaciones Generales <span class="text-danger">*</span></label>
-                                                                <textarea class="form-control fs-8" id="evo_obsrvciones" rows="4" placeholder="Observaciones adicionales, alertas o recomendaciones de los diagnósticos..." required></textarea>
+                                                                <textarea class="form-control fs-8" id="evo_obsrvciones" rows="3" placeholder="Observaciones adicionales, alertas o recomendaciones de los diagnósticos..." required></textarea>
                                                             </div>
                                                         </div>
                                                     </div>
