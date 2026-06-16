@@ -26,7 +26,8 @@ class AntecedentesDrawer {
                 conditions: [],       // Mapea a FHIR: Condition (Patológicos)
                 medications: [],      // Mapea a FHIR: MedicationStatement (Farmacológicos)
                 familyHistory: [],    // Mapea a FHIR: FamilyMemberHistory (Familiares)
-                allergies: []         // Mapea a FHIR: AllergyIntolerance (Alergias)
+                allergies: [],        // Mapea a FHIR: AllergyIntolerance (Alergias)
+                otros: null           // Mapea a FHIR: Observation (Otros Antecedentes)
             },
             ui: {
                 isOpen: false
@@ -333,6 +334,90 @@ class AntecedentesDrawer {
                             </div>
                         </div>
 
+                        <!-- ACCORDION: OTROS ANTECEDENTES (Observation) -->
+                        <div class="accordion-item border rounded mb-2 overflow-hidden shadow-sm bg-white" data-accordion="otros">
+                            <h2 class="accordion-header" id="headingOtrosFHIR">
+                                <button class="accordion-button collapsed py-2.5 px-3 bg-light text-dark fw-bold fs-8 d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOtrosFHIR" aria-expanded="false" aria-controls="collapseOtrosFHIR">
+                                    <i class="bi bi-file-medical text-primary me-2 fs-6"></i>
+                                    <span class="me-1.5">Otros Antecedentes Clínicos</span>
+                                    <span class="badge bg-secondary rounded-pill font-monospace count-badge me-1.5" style="font-size: 0.65rem;">0</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 uppercase font-semibold scale-90" style="font-size: 0.55rem; padding: 0.15rem 0.25rem;">Observation</span>
+                                </button>
+                            </h2>
+                            <div id="collapseOtrosFHIR" class="accordion-collapse collapse" aria-labelledby="headingOtrosFHIR" data-bs-parent="#accordionAntecedentesFHIR">
+                                <div class="accordion-body p-2.5 bg-white">
+                                    <!-- Add Button -->
+                                    <div class="d-flex justify-content-end mb-2">
+                                        <button type="button" class="btn btn-outline-primary btn-sm py-0.5 px-2 btn-add-form" data-type="otros" style="font-size: 0.7rem; font-weight: 600;">
+                                            <i class="bi bi-plus-circle me-1"></i>Añadir / Editar
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Items List -->
+                                    <div class="items-list list-group list-group-flush mb-2 border rounded" id="list-otros"></div>
+                                    
+                                    <!-- Micro Form -->
+                                    <form class="hidden-form d-none bg-light border border-secondary border-opacity-15 rounded p-2.5 mb-1" id="form-otros">
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-12">
+                                                <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Quirúrgicos</label>
+                                                <textarea name="quirurgicos" class="form-control form-control-sm" rows="1" placeholder="Ej: Apendicectomía (2018)" style="font-size: 0.75rem;"></textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Transfusiones</label>
+                                                <input type="text" name="transfusiones" class="form-control form-control-sm" placeholder="Ej: Glóbulos rojos (2020) o Negativo" style="font-size: 0.75rem;">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Traumáticos</label>
+                                                <textarea name="traumaticos" class="form-control form-control-sm" rows="1" placeholder="Ej: Fractura de fémur (2015)" style="font-size: 0.75rem;"></textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Tóxicos</label>
+                                                <input type="text" name="toxicos" class="form-control form-control-sm" placeholder="Ej: Tabaquismo activo, alcohol social" style="font-size: 0.75rem;">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">ETS (Confidencial)</label>
+                                                <input type="text" name="ets" class="form-control form-control-sm" placeholder="Ej: Sífilis tratada (2021) o Negativo" style="font-size: 0.75rem;">
+                                            </div>
+                                            
+                                            <!-- Section Ginecoobstétrico (Femenino) -->
+                                            <div id="section-ginecoobstetrico" class="col-12 d-none">
+                                                <div class="border rounded p-2 bg-white">
+                                                    <div class="fw-bold text-secondary mb-1.5 small" style="font-size: 0.7rem;">Antecedentes Ginecoobstétricos</div>
+                                                    <div class="row g-1">
+                                                        <div class="col-3">
+                                                            <label class="form-label mb-0.5 text-muted small" style="font-size: 0.65rem;">G (Grav.)</label>
+                                                            <input type="number" min="0" name="gineco_g" class="form-control form-control-sm px-1 text-center" style="font-size: 0.75rem;" placeholder="0">
+                                                        </div>
+                                                        <div class="col-3">
+                                                            <label class="form-label mb-0.5 text-muted small" style="font-size: 0.65rem;">P (Par.)</label>
+                                                            <input type="number" min="0" name="gineco_p" class="form-control form-control-sm px-1 text-center" style="font-size: 0.75rem;" placeholder="0">
+                                                        </div>
+                                                        <div class="col-3">
+                                                            <label class="form-label mb-0.5 text-muted small" style="font-size: 0.65rem;">A (Abort.)</label>
+                                                            <input type="number" min="0" name="gineco_a" class="form-control form-control-sm px-1 text-center" style="font-size: 0.75rem;" placeholder="0">
+                                                        </div>
+                                                        <div class="col-3">
+                                                            <label class="form-label mb-0.5 text-muted small" style="font-size: 0.65rem;">C (Cesár.)</label>
+                                                            <input type="number" min="0" name="gineco_c" class="form-control form-control-sm px-1 text-center" style="font-size: 0.75rem;" placeholder="0">
+                                                        </div>
+                                                        <div class="col-12 mt-1.5">
+                                                            <label class="form-label mb-0.5 text-muted small" style="font-size: 0.65rem;">FUM (Fecha Última Menstruación)</label>
+                                                            <input type="date" name="gineco_fum" class="form-control form-control-sm" style="font-size: 0.75rem;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-end gap-1.5">
+                                            <button type="button" class="btn btn-secondary btn-sm py-0.5 px-2 btn-cancel-form" style="font-size: 0.7rem;">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary btn-sm py-0.5 px-2.5" style="font-size: 0.7rem;">Guardar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                 </div>
@@ -431,7 +516,8 @@ class AntecedentesDrawer {
                 conditions: data.conditions || [],
                 medications: data.medications || [],
                 familyHistory: data.familyHistory || [],
-                allergies: data.allergies || []
+                allergies: data.allergies || [],
+                otros: data.otros || null
             };
         }
 
@@ -459,7 +545,8 @@ class AntecedentesDrawer {
             conditions: data.conditions || [],
             medications: data.medications || [],
             familyHistory: data.familyHistory || [],
-            allergies: data.allergies || []
+            allergies: data.allergies || [],
+            otros: data.otros || null
         };
         this.renderLists();
     }
@@ -675,6 +762,66 @@ class AntecedentesDrawer {
                 verificationStatus: verificationStatus,
                 observaciones: observaciones
             };
+        } else if (type === 'otros') {
+            const quirurgicos = (formData.get('quirurgicos') || '').trim();
+            const transfusiones = (formData.get('transfusiones') || '').trim();
+            const traumaticos = (formData.get('traumaticos') || '').trim();
+            const toxicos = (formData.get('toxicos') || '').trim();
+            const ets = (formData.get('ets') || '').trim();
+            
+            const genderText = (document.querySelector('#sidebar-patient-sex')?.textContent || '').trim().toLowerCase();
+            const isFemale = genderText.includes('femenin') || genderText.includes('female') || genderText === 'f' || genderText === 'w' || genderText.includes('mujer');
+            
+            let ginecoobstetras = '';
+            if (isFemale) {
+                const g = (formData.get('gineco_g') || '').trim();
+                const p = (formData.get('gineco_p') || '').trim();
+                const a = (formData.get('gineco_a') || '').trim();
+                const c = (formData.get('gineco_c') || '').trim();
+                const fum = (formData.get('gineco_fum') || '').trim();
+                
+                if (g || p || a || c || fum) {
+                    ginecoobstetras = JSON.stringify({ g, p, a, c, fum });
+                }
+            }
+
+            // Formatear Recurso FHIR: Observation
+            fhirResource = {
+                resourceType: "Observation",
+                id: `observation-otros-temp-${Date.now()}`,
+                status: "final",
+                code: {
+                    coding: [{
+                        system: "http://loinc.org",
+                        code: "history-other",
+                        display: "Otros Antecedentes Clínicos"
+                    }]
+                },
+                subject: {
+                    reference: `Patient/${this.state.pacienteId}`
+                },
+                effectiveDateTime: timestamp,
+                component: [
+                    { code: { text: "Quirurgicos" }, valueString: quirurgicos },
+                    { code: { text: "Transfusiones" }, valueString: transfusiones },
+                    { code: { text: "Traumaticos" }, valueString: traumaticos },
+                    { code: { text: "Toxicos" }, valueString: toxicos },
+                    { code: { text: "ETS" }, valueString: ets },
+                    { code: { text: "Ginecoobstetras" }, valueString: ginecoobstetras }
+                ]
+            };
+
+            // Preparar datos locales
+            localData = {
+                id: fhirResource.id,
+                quirurgicos: quirurgicos,
+                transfusiones: transfusiones,
+                traumaticos: traumaticos,
+                toxicos: toxicos,
+                ets: ets,
+                ginecoobstetras: ginecoobstetras,
+                fecha_ingreso: timestamp.split('T')[0]
+            };
         }
 
         // Notificar al controlador principal mediante callback y esperar confirmación
@@ -701,6 +848,8 @@ class AntecedentesDrawer {
                 this.state.data.familyHistory.push(localData);
             } else if (type === 'alergias') {
                 this.state.data.allergies.push(localData);
+            } else if (type === 'otros') {
+                this.state.data.otros = localData;
             }
 
             // Re-renderizar lista modificada e insignias de contador
@@ -911,6 +1060,74 @@ class AntecedentesDrawer {
                     </div>
                 `;
             }).join('');
+        }
+
+        // 5. Otros Antecedentes
+        const listOtros = this.drawerElement.querySelector('#list-otros');
+        const badgeOtros = this.drawerElement.querySelector('[data-accordion="otros"] .count-badge');
+        
+        // Show/hide ginecoobstetrico section based on patient sex
+        const genderText = (document.querySelector('#sidebar-patient-sex')?.textContent || '').trim().toLowerCase();
+        const isFemale = genderText.includes('femenin') || genderText.includes('female') || genderText === 'f' || genderText === 'w' || genderText.includes('mujer');
+        const sectionGineco = this.drawerElement.querySelector('#section-ginecoobstetrico');
+        if (sectionGineco) {
+            if (isFemale) {
+                sectionGineco.classList.remove('d-none');
+            } else {
+                sectionGineco.classList.add('d-none');
+            }
+        }
+
+        const otrosData = this.state.data.otros;
+        badgeOtros.textContent = otrosData ? 1 : 0;
+
+        if (!otrosData) {
+            listOtros.innerHTML = `<div class="p-2 text-center text-muted italic bg-light" style="font-size: 0.72rem;">Sin antecedentes registrados</div>`;
+        } else {
+            let ginecoDisplay = '--';
+            if (isFemale && otrosData.ginecoobstetras) {
+                try {
+                    const gp = JSON.parse(otrosData.ginecoobstetras);
+                    ginecoDisplay = `G:${gp.g || '0'} P:${gp.p || '0'} A:${gp.a || '0'} C:${gp.c || '0'} (FUM: ${gp.fum || '--'})`;
+                } catch (e) {
+                    ginecoDisplay = otrosData.ginecoobstetras;
+                }
+            }
+
+            listOtros.innerHTML = `
+                <div class="list-group-item p-2 d-flex flex-column gap-1.5 bg-white border-bottom" style="font-size: 0.72rem;">
+                    <div><span class="text-secondary fw-semibold">Quirúrgicos:</span> <span class="text-dark">${otrosData.quirurgicos || '--'}</span></div>
+                    <div><span class="text-secondary fw-semibold">Transfusiones:</span> <span class="text-dark">${otrosData.transfusiones || '--'}</span></div>
+                    <div><span class="text-secondary fw-semibold">Traumáticos:</span> <span class="text-dark">${otrosData.traumaticos || '--'}</span></div>
+                    <div><span class="text-secondary fw-semibold">Tóxicos:</span> <span class="text-dark">${otrosData.toxicos || '--'}</span></div>
+                    <div><span class="text-secondary fw-semibold">ETS:</span> <span class="text-dark">${otrosData.ets || '--'}</span></div>
+                    ${isFemale ? `<div><span class="text-secondary fw-semibold">Ginecoobstétricos:</span> <span class="text-dark">${ginecoDisplay}</span></div>` : ''}
+                    <div class="text-end text-muted font-monospace mt-1" style="font-size: 0.62rem;">Asertado: ${otrosData.fecha_ingreso || '--'}</div>
+                </div>
+            `;
+
+            // Pre-fill form if visible/rendered
+            const formOtros = this.drawerElement.querySelector('#form-otros');
+            if (formOtros) {
+                formOtros.querySelector('[name="quirurgicos"]').value = otrosData.quirurgicos || '';
+                formOtros.querySelector('[name="transfusiones"]').value = otrosData.transfusiones || '';
+                formOtros.querySelector('[name="traumaticos"]').value = otrosData.traumaticos || '';
+                formOtros.querySelector('[name="toxicos"]').value = otrosData.toxicos || '';
+                formOtros.querySelector('[name="ets"]').value = otrosData.ets || '';
+                
+                if (isFemale && otrosData.ginecoobstetras) {
+                    try {
+                        const gp = JSON.parse(otrosData.ginecoobstetras);
+                        formOtros.querySelector('[name="gineco_g"]').value = gp.g || '';
+                        formOtros.querySelector('[name="gineco_p"]').value = gp.p || '';
+                        formOtros.querySelector('[name="gineco_a"]').value = gp.a || '';
+                        formOtros.querySelector('[name="gineco_c"]').value = gp.c || '';
+                        formOtros.querySelector('[name="gineco_fum"]').value = gp.fum || '';
+                    } catch (e) {
+                        // ignore fallback
+                    }
+                }
+            }
         }
     }
 }

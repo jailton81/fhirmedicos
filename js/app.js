@@ -281,6 +281,15 @@ class FormHandler {
                         payload.criticidad = fhirResource.criticality;
                         payload.observaciones = fhirResource.note && fhirResource.note[0] ? fhirResource.note[0].text : null;
                     }
+                    else if (resourceType === 'Observation') {
+                        endpoint = 'createAntecedenteOtro.php';
+                        payload.quirurgicos = fhirResource.component.find(c => c.code.text === 'Quirurgicos')?.valueString || null;
+                        payload.transfusiones = fhirResource.component.find(c => c.code.text === 'Transfusiones')?.valueString || null;
+                        payload.traumaticos = fhirResource.component.find(c => c.code.text === 'Traumaticos')?.valueString || null;
+                        payload.toxicos = fhirResource.component.find(c => c.code.text === 'Toxicos')?.valueString || null;
+                        payload.ets = fhirResource.component.find(c => c.code.text === 'ETS')?.valueString || null;
+                        payload.ginecoobstetras = fhirResource.component.find(c => c.code.text === 'Ginecoobstetras')?.valueString || null;
+                    }
 
                     if (endpoint) {
                         const response = await this.api.request(endpoint, 'POST', payload);
@@ -292,6 +301,7 @@ class FormHandler {
                             else if (resourceType === 'MedicationStatement') await this.loadMedications(pacienteId);
                             else if (resourceType === 'FamilyMemberHistory') await this.loadFamilyHistory(pacienteId);
                             else if (resourceType === 'AllergyIntolerance') await this.loadAllergies(pacienteId);
+                            else if (resourceType === 'Observation') await this.loadOtros(pacienteId);
                             
                             this.updateSmartClinicalSummary($('#sidebar-patient-age').text(), $('#sidebar-patient-sex').text());
                             return true;
@@ -677,8 +687,9 @@ class FormHandler {
         const pMedication = this.loadMedications(pacienteId);
         const pDiagnoses = this.loadDiagnosticosHC(pacienteId);
         const pStatusOpts = this.loadStatusOptions();
+        const pOtros = this.loadOtros(pacienteId);
 
-        await Promise.all([pCondition, pAllergy, pFamily, pMedication, pDiagnoses, pStatusOpts]);
+        await Promise.all([pCondition, pAllergy, pFamily, pMedication, pDiagnoses, pStatusOpts, pOtros]);
 
         // Mapear y actualizar datos del Drawer de Antecedentes (Offcanvas)
         const conditionsMapped = (this.currentConditions || []).map(c => ({
@@ -728,7 +739,8 @@ class FormHandler {
             conditions: conditionsMapped,
             medications: medicationsMapped,
             familyHistory: familyHistoryMapped,
-            allergies: allergiesMapped
+            allergies: allergiesMapped,
+            otros: this.currentOtros
         });
 
         // Configurar el paciente activo en el drawer
@@ -982,6 +994,20 @@ class FormHandler {
         } catch (error) {
             console.error("Error loading allergies:", error);
             $('#list-alergicos-existentes').html('<div class="text-muted fs-8.5 text-center py-1 text-danger">Error.</div>');
+        }
+    }
+
+    async loadOtros(pacienteId) {
+        try {
+            const res = await this.api.request(`getAntecedentesOtros.php?id_pcnte=${pacienteId}`, 'GET');
+            if (res.status === 'success' && res.data && res.data.length > 0) {
+                this.currentOtros = res.data[0];
+            } else {
+                this.currentOtros = null;
+            }
+        } catch (error) {
+            console.error("Error loading otros antecedentes:", error);
+            this.currentOtros = null;
         }
     }
 
