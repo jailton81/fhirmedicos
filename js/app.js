@@ -231,6 +231,83 @@ class FormHandler {
         this.api = apiService;
         this.ui = uiService;
         this.storage = storageService;
+
+        // Instanciar AntecedentesDrawer (Offcanvas)
+        this.antecedentesDrawer = new AntecedentesDrawer({
+            mountElement: document.body,
+            onSave: async (resourceType, fhirResource) => {
+                const pacienteId = this.currentPatientId;
+                if (!pacienteId) return;
+                
+                try {
+                    let endpoint = '';
+                    let payload = { id_pcnte: pacienteId };
+
+                    if (resourceType === 'Condition') {
+                        endpoint = 'createCondition.php';
+                        payload.descripcion = fhirResource.code.text;
+                        payload.cie_10 = fhirResource.code.coding[0] ? fhirResource.code.coding[0].code : null;
+                        payload.estado = fhirResource.clinicalStatus.coding[0].code;
+                        payload.estado_verificacion = fhirResource.verificationStatus.coding[0].code;
+                        payload.edad_diagnostico = fhirResource.onsetAge ? fhirResource.onsetAge.value : null;
+                        payload.observaciones = fhirResource.note && fhirResource.note[0] ? fhirResource.note[0].text : null;
+                    } 
+                    else if (resourceType === 'MedicationStatement') {
+                        endpoint = 'createMedicationStatement.php';
+                        payload.descripcion = fhirResource.medicationCodeableConcept.text;
+                        payload.estado = fhirResource.status;
+                        payload.observaciones = fhirResource.dosage[0] ? fhirResource.dosage[0].text : null;
+                        payload.codigo = fhirResource.medicationCodeableConcept.coding && fhirResource.medicationCodeableConcept.coding[0] ? fhirResource.medicationCodeableConcept.coding[0].code : null;
+                    } 
+                    else if (resourceType === 'FamilyMemberHistory') {
+                        endpoint = 'createFamilyMemberHistory.php';
+                        payload.descripcion = fhirResource.condition[0].code.text;
+                        // Traducir parentesco FHIR a código de la BD (FTH/MTH -> 01, SIB -> 02, UNC -> 03, GRFTH -> 04)
+                        const mapping = { 'FTH': '01', 'MTH': '01', 'SIB': '02', 'UNC': '03', 'GRFTH': '04' };
+                        const relCode = fhirResource.relationship.coding[0].code;
+                        payload.parentesco = mapping[relCode] || relCode || '01';
+                        payload.estado = fhirResource.status;
+                        payload.codigo = fhirResource.condition[0].code.coding && fhirResource.condition[0].code.coding[0] ? fhirResource.condition[0].code.coding[0].code : null;
+                        payload.cie_10 = payload.codigo;
+                        payload.edad_diagnostico = fhirResource.condition[0].onsetAge ? fhirResource.condition[0].onsetAge.value : null;
+                        payload.observaciones = fhirResource.condition[0].note && fhirResource.condition[0].note[0] ? fhirResource.condition[0].note[0].text : null;
+                    } 
+                    else if (resourceType === 'AllergyIntolerance') {
+                        endpoint = 'createAllergyIntolerance.php';
+                        payload.descripcion = fhirResource.code.text;
+                        payload.tipoalergia = fhirResource.type;
+                        payload.estado = fhirResource.clinicalStatus.coding[0].code;
+                        payload.estado_verificacion = fhirResource.verificationStatus.coding[0].code;
+                        payload.criticidad = fhirResource.criticality;
+                        payload.observaciones = fhirResource.note && fhirResource.note[0] ? fhirResource.note[0].text : null;
+                    }
+
+                    if (endpoint) {
+                        const response = await this.api.request(endpoint, 'POST', payload);
+                        if (response.status === 'success') {
+                            this.ui.showToast('Antecedente guardado y sincronizado exitosamente.', 'success');
+                            
+                            // Recargar las listas del panel principal
+                            if (resourceType === 'Condition') await this.loadConditions(pacienteId);
+                            else if (resourceType === 'MedicationStatement') await this.loadMedications(pacienteId);
+                            else if (resourceType === 'FamilyMemberHistory') await this.loadFamilyHistory(pacienteId);
+                            else if (resourceType === 'AllergyIntolerance') await this.loadAllergies(pacienteId);
+                            
+                            this.updateSmartClinicalSummary($('#sidebar-patient-age').text(), $('#sidebar-patient-sex').text());
+                            return true;
+                        } else {
+                            this.ui.showToast(`Error al guardar en el servidor: ${response.message}`, 'danger');
+                            return false;
+                        }
+                    }
+                    return false;
+                } catch (error) {
+                    console.error("Error in Offcanvas onSave synchronization:", error);
+                    this.ui.showToast('Error de comunicación al sincronizar con el servidor.', 'danger');
+                    return false;
+                }
+            }
+        });
     }
 
     /**
@@ -602,6 +679,65 @@ class FormHandler {
         const pStatusOpts = this.loadStatusOptions();
 
         await Promise.all([pCondition, pAllergy, pFamily, pMedication, pDiagnoses, pStatusOpts]);
+
+        // Mapear y actualizar datos del Drawer de Antecedentes (Offcanvas)
+        const conditionsMapped = (this.currentConditions || []).map(c => ({
+            id: c.id,
+            code: c.cie_10 || 'S/C',
+            description: c.descripcion || '',
+            clinicalStatus: c.status_clinico_code || 'active',
+            verificationStatus: c.status_verificacion_code || c.verificacion_code || 'confirmed',
+            recordedDate: c.fcha_aprtra ? c.fcha_aprtra.split(' ')[0] : '--',
+            edad: c.edad_diagnostico || null,
+            observaciones: c.observaciones || null
+        }));
+
+        const medicationsMapped = (this.currentMedications || []).map(m => ({
+            id: m.id,
+            medication: m.descripcion || '',
+            status: m.estado || 'active',
+            dosage: m.observaciones || 'Sin especificaciones',
+            effectiveDate: m.fcha_aprtra ? m.fcha_aprtra.split(' ')[0] : '--',
+            code: m.codigo || 'S/C'
+        }));
+
+        const familyHistoryMapped = (this.currentFamilyHistory || []).map(f => ({
+            id: f.id,
+            relationship: f.parentesco_nombre || 'Familiar',
+            condition: f.descripcion || '',
+            status: f.estado || 'completed',
+            code: f.cie_10 || f.codigo || 'S/C',
+            edad: f.edad_diagnostico || null,
+            observaciones: f.observaciones || null
+        }));
+
+        const allergiesMapped = (this.currentAllergies || []).map(a => ({
+            id: a.id,
+            substance: a.descripcion || '',
+            criticality: a.criticidad || 'high',
+            type: a.tipoalergia,
+            tipo_alergia_nombre: a.tipo_alergia_nombre || 'Alergia',
+            clinicalStatus: a.estado || 'active',
+            estado_clinico_display: a.estado_clinico_display || 'Activo',
+            verificationStatus: a.estado_verificacion || 'confirmed',
+            verificacion_display: a.verificacion_display || 'Confirmado',
+            observaciones: a.observaciones || ''
+        }));
+
+        this.antecedentesDrawer.setData({
+            conditions: conditionsMapped,
+            medications: medicationsMapped,
+            familyHistory: familyHistoryMapped,
+            allergies: allergiesMapped
+        });
+
+        // Configurar el paciente activo en el drawer
+        this.antecedentesDrawer.state.pacienteId = pacienteId;
+        this.antecedentesDrawer.state.patientName = this.currentPatientName || '';
+        if (this.antecedentesDrawer.drawerElement) {
+            this.antecedentesDrawer.drawerElement.querySelector('#drawer-patient-id').textContent = pacienteId;
+            this.antecedentesDrawer.drawerElement.querySelector('#drawer-patient-name').textContent = this.currentPatientName || '';
+        }
     }
 
     async loadDiagnosticosHC(pacienteId) {
@@ -677,10 +813,37 @@ class FormHandler {
             const pVerif = this.api.request('getEstados.php?status=verificationStatus', 'GET').catch(err => ({ error: true, data: [] }));
             const pMedStatus = this.api.request('getEstados.php?status=MedicationStatusCodes', 'GET').catch(err => ({ error: true, data: [] }));
             const pHistoryStatus = this.api.request('getEstados.php?status=history-status', 'GET').catch(err => ({ error: true, data: [] }));
+            const pParentesco = this.api.request('getEstados.php?status=Parentesco', 'GET').catch(err => ({ error: true, data: [] }));
+            const pTipoAlergia = this.api.request('getEstados.php?status=tipoalergia', 'GET').catch(err => ({ error: true, data: [] }));
 
-            const [resStatus, resAllergyStatus, resVerif, resMedStatus, resHistoryStatus] = await Promise.all([
-                pStatus, pAllergyStatus, pVerif, pMedStatus, pHistoryStatus
+            const [resStatus, resAllergyStatus, resVerif, resMedStatus, resHistoryStatus, resParentesco, resTipoAlergia] = await Promise.all([
+                pStatus, pAllergyStatus, pVerif, pMedStatus, pHistoryStatus, pParentesco, pTipoAlergia
             ]);
+
+            if (resParentesco && resParentesco.status === 'success' && resParentesco.data) {
+                // Populate parentesco select in drawer
+                if (this.antecedentesDrawer && this.antecedentesDrawer.drawerElement) {
+                    const selectParentesco = this.antecedentesDrawer.drawerElement.querySelector('#form-familiares select[name="parentesco"]');
+                    if (selectParentesco) {
+                        selectParentesco.innerHTML = resParentesco.data.map(item => 
+                            `<option value="${item.code}">${item.display}</option>`
+                        ).join('');
+                    }
+                }
+            }
+
+            if (resTipoAlergia && resTipoAlergia.status === 'success' && resTipoAlergia.data) {
+                // Populate tipoalergia select in drawer
+                if (this.antecedentesDrawer && this.antecedentesDrawer.drawerElement) {
+                    const selectTipoAlergia = this.antecedentesDrawer.drawerElement.querySelector('#form-alergias select[name="tipoalergia"]');
+                    if (selectTipoAlergia) {
+                        selectTipoAlergia.innerHTML = '<option value="" disabled selected>Seleccione...</option>' + 
+                            resTipoAlergia.data.map(item => 
+                                `<option value="${item.code}">${item.display}</option>`
+                            ).join('');
+                    }
+                }
+            }
 
             if (resStatus && resStatus.status === 'success' && resStatus.data) {
                 // Populate pathological status
@@ -698,6 +861,16 @@ class FormHandler {
                 resHistoryStatus.data.forEach(item => {
                     selectFamEstado.append(new Option(item.display, item.code));
                 });
+
+                // Populate family history status in drawer
+                if (this.antecedentesDrawer && this.antecedentesDrawer.drawerElement) {
+                    const selectDrawerFamEstado = this.antecedentesDrawer.drawerElement.querySelector('#form-familiares select[name="estado"]');
+                    if (selectDrawerFamEstado) {
+                        selectDrawerFamEstado.innerHTML = resHistoryStatus.data.map(item => 
+                            `<option value="${item.code}">${item.display}</option>`
+                        ).join('');
+                    }
+                }
             }
 
             if (resAllergyStatus && resAllergyStatus.status === 'success' && resAllergyStatus.data) {
@@ -706,6 +879,16 @@ class FormHandler {
                 resAllergyStatus.data.forEach(item => {
                     selectAleEstado.append(new Option(item.display, item.code));
                 });
+
+                // Populate clinicalStatus select in drawer
+                if (this.antecedentesDrawer && this.antecedentesDrawer.drawerElement) {
+                    const selectDrawerAllergyEstado = this.antecedentesDrawer.drawerElement.querySelector('#form-alergias select[name="clinicalStatus"]');
+                    if (selectDrawerAllergyEstado) {
+                        selectDrawerAllergyEstado.innerHTML = resAllergyStatus.data.map(item => 
+                            `<option value="${item.code}">${item.display}</option>`
+                        ).join('');
+                    }
+                }
             }
 
             if (resMedStatus && resMedStatus.status === 'success' && resMedStatus.data) {
@@ -730,6 +913,16 @@ class FormHandler {
                 resVerif.data.forEach(item => {
                     selectAleVerif.append(new Option(item.display, item.code));
                 });
+
+                // Populate verificationStatus select in drawer
+                if (this.antecedentesDrawer && this.antecedentesDrawer.drawerElement) {
+                    const selectDrawerAllergyVerif = this.antecedentesDrawer.drawerElement.querySelector('#form-alergias select[name="verificationStatus"]');
+                    if (selectDrawerAllergyVerif) {
+                        selectDrawerAllergyVerif.innerHTML = resVerif.data.map(item => 
+                            `<option value="${item.code}">${item.display}</option>`
+                        ).join('');
+                    }
+                }
             }
         } catch (error) {
             console.error("Error al cargar estados y verificaciones:", error);
@@ -1606,6 +1799,18 @@ class App {
         $('#form-alergico').on('submit', (e) => this.formHandler.saveAlergico(e));
         $('#form-familiar').on('submit', (e) => this.formHandler.saveFamiliar(e));
         $('#form-farmaco').on('submit', (e) => this.formHandler.saveFarmaco(e));
+
+        // Botón para abrir el panel lateral de antecedentes FHIR
+        $(document).on('click', '#btn-open-fhir-drawer', (e) => {
+            e.preventDefault();
+            const patientId = this.formHandler.currentPatientId;
+            const patientName = this.formHandler.currentPatientName;
+            if (patientId) {
+                this.formHandler.antecedentesDrawer.open(patientId, patientName);
+            } else {
+                this.ui.showToast('Seleccione un paciente antes de abrir el historial.', 'warning');
+            }
+        });
 
         // Botón Cierre de Sesión
         $('#btn-logout, #btn-logout-panel').on('click', (e) => {

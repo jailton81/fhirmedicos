@@ -331,7 +331,7 @@
                 <!-- Patient Profile Summary -->
                 <div class="d-flex align-items-center gap-3 mb-3 mt-2">
                     <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150" id="sidebar-patient-avatar" class="rounded-circle border" style="width: 48px; height: 48px; object-fit: cover;" alt="Patient Avatar">
-                    <div class="d-flex flex-column">
+                    <div class="d-flex flex-column gap-1">
                         <strong id="sidebar-patient-name" class="text-dark fs-8 lh-sm">Cargando...</strong>
                         <span class="text-secondary fs-9" id="sidebar-patient-doc">ID: ...</span>
                     </div>
@@ -357,41 +357,15 @@
                     </div>
                 </div>
 
-                <!-- Vitals Summary (6 indicators in 2 rows) -->
-                <div class="border-top border-bottom py-3 mb-4 text-center">
-                    <div class="text-secondary fw-semibold mb-2 text-start px-1 fs-9" style="letter-spacing: 0.5px; font-family: 'Inter', sans-serif;">Vitals</div>
-                    <div class="row g-0 align-items-center mb-2">
-                        <div class="col-4 border-end">
-                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">BP</span>
-                            <strong id="sidebar-vital-bp" class="text-dark fs-8">--</strong>
-                        </div>
-                        <div class="col-4 border-end">
-                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">HR</span>
-                            <strong id="sidebar-vital-hr" class="text-dark fs-8">--</strong>
-                        </div>
-                        <div class="col-4">
-                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">Temp</span>
-                            <strong id="sidebar-vital-temp" class="text-dark fs-8">--</strong>
-                        </div>
-                    </div>
-                    <div class="row g-0 align-items-center border-top pt-2">
-                        <div class="col-4 border-end">
-                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">RR</span>
-                            <strong id="sidebar-vital-rr" class="text-dark fs-8">--</strong>
-                        </div>
-                        <div class="col-4 border-end">
-                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">Peso</span>
-                            <strong id="sidebar-vital-peso" class="text-dark fs-8">--</strong>
-                        </div>
-                        <div class="col-4">
-                            <span class="text-muted d-block small text-uppercase" style="font-size: 0.65rem;">IMC</span>
-                            <strong id="sidebar-vital-imc" class="text-dark fs-8">--</strong>
-                        </div>
-                    </div>
+                <!-- Botón de Historial Clínico Interoperable (FHIR) -->
+                <div class="mb-4">
+                    <button type="button" class="btn btn-primary w-100 px-3 py-2 fw-bold fs-6" id="btn-open-fhir-drawer" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAntecedentesFHIR">
+                        <i class="bi bi-file-earmark-medical me-2"></i>📋 Ver Antecedentes Completos
+                    </button>
                 </div>
 
                 <!-- Active Diagnoses Summary -->
-                <div class="border-bottom pb-3 mb-4 text-center">
+                <div class="border-top border-bottom py-3 mb-4 text-center">
                     <div class="text-secondary fw-semibold mb-2 text-start px-1 fs-9" style="letter-spacing: 0.5px; font-family: 'Inter', sans-serif;">Diagnósticos Activos</div>
                     <div id="list-diagnosticos-activos" class="d-flex flex-column gap-1.5 text-start scroll-independent px-1 fs-9 text-muted" style="max-height: 125px; overflow-y: auto;">
                         <div class="text-muted fs-8.5 text-center py-1">Sin diagnósticos activos.</div>
@@ -572,56 +546,41 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Accordion Item: Alérgicos -->
+                                            <!-- Accordion Item: Farmacológicos -->
                                             <div class="accordion-item">
-                                                <h2 class="accordion-header" id="headingAlergico">
-                                                    <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAlergico" aria-expanded="false" aria-controls="collapseAlergico">
-                                                        <i class="bi bi-exclamation-triangle text-warning me-2 fs-7.5"></i>Alérgicos
+                                                <h2 class="accordion-header" id="headingFarmaco">
+                                                    <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFarmaco" aria-expanded="false" aria-controls="collapseFarmaco">
+                                                        <i class="bi bi-capsule text-success me-2 fs-7.5"></i>Farmacológicos
                                                     </button>
                                                 </h2>
-                                                <div id="collapseAlergico" class="accordion-collapse collapse" aria-labelledby="headingAlergico" data-bs-parent="#accordionAntecedentes">
+                                                <div id="collapseFarmaco" class="accordion-collapse collapse" aria-labelledby="headingFarmaco" data-bs-parent="#accordionAntecedentes">
                                                     <div class="accordion-body p-2.5">
-                                                        <div id="list-alergicos-existentes" class="mb-3 border rounded-2 p-2 bg-light scroll-independent" style="max-height: 120px; overflow-y: auto;">
+                                                        <div id="list-farmacos-existentes" class="mb-3 border rounded-2 p-2 bg-light scroll-independent" style="max-height: 120px; overflow-y: auto;">
                                                             <!-- Dynamic -->
                                                         </div>
-                                                        <form id="form-alergico" class="border-top pt-2">
-                                                            <div class="fw-bold text-primary fs-8.5 mb-1.5"><i class="bi bi-plus-circle me-1"></i>Registrar Alergia</div>
+                                                        <form id="form-farmaco" class="border-top pt-2">
+                                                            <div class="fw-bold text-primary fs-8.5 mb-1.5"><i class="bi bi-plus-circle me-1"></i>Registrar Medicamento</div>
                                                             <div class="row g-2">
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_tipo">Tipo</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="ale_tipo">
-                                                                        <option value="01" selected>Medicamento</option>
-                                                                        <option value="02">Alimento</option>
-                                                                        <option value="03">Sustancia Ambiental</option>
-                                                                        <option value="04">Contacto dérmico</option>
-                                                                        <option value="05">Picadura de insecto</option>
-                                                                        <option value="06">Otra</option>
-                                                                    </select>
+                                                                <div class="col-7">
+                                                                    <label class="form-label fs-9 mb-0.5" for="far_descripcion">Medicamento</label>
+                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="far_descripcion" placeholder="Ej: Losartán 50mg" required>
+                                                                </div>
+                                                                <div class="col-5">
+                                                                    <label class="form-label fs-9 mb-0.5" for="far_codigo">Código</label>
+                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8 font-monospace" id="far_codigo" placeholder="Ej: C09CA01">
                                                                 </div>
                                                                 <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_estado">Estado</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="ale_estado">
+                                                                    <label class="form-label fs-9 mb-0.5" for="far_estado">Estado</label>
+                                                                    <select class="form-select py-0.5 px-2 fs-8" id="far_estado">
                                                                         <option value="active" selected>Activo</option>
-                                                                        <option value="inactive">Inactivo</option>
-                                                                        <option value="resolved">Resuelto</option>
+                                                                        <option value="completed">Completado</option>
+                                                                        <option value="stopped">Suspendido</option>
                                                                     </select>
                                                                 </div>
                                                                 <div class="col-12">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_descripcion">Alergeno / Descripción</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="ale_descripcion" placeholder="Ej: Penicilina, Nueces" required>
+                                                                    <label class="form-label fs-9 mb-0.5" for="far_observaciones">Indicaciones</label>
+                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="far_observaciones" placeholder="Ej: 1 tableta diaria">
                                                                 </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_verif">Verificación</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="ale_verif">
-                                                                        <option value="confirmed" selected>Confirmado</option>
-                                                                        <option value="unconfirmed">Sin Confirmar</option>
-                                                                    </select>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="ale_observaciones">Observaciones</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="ale_observaciones" placeholder="Detalles...">
-                                                                </div>
-                                                                <input type="hidden" id="ale_codigo" value="">
                                                                 <div class="col-12 text-end">
                                                                     <button type="submit" class="btn btn-sky py-0.5 px-2.5 fs-9"><i class="bi bi-save me-1"></i>Guardar</button>
                                                                 </div>
@@ -689,41 +648,56 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Accordion Item: Farmacológicos -->
+                                            <!-- Accordion Item: Alérgicos -->
                                             <div class="accordion-item">
-                                                <h2 class="accordion-header" id="headingFarmaco">
-                                                    <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFarmaco" aria-expanded="false" aria-controls="collapseFarmaco">
-                                                        <i class="bi bi-capsule text-success me-2 fs-7.5"></i>Farmacológicos
+                                                <h2 class="accordion-header" id="headingAlergico">
+                                                    <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAlergico" aria-expanded="false" aria-controls="collapseAlergico">
+                                                        <i class="bi bi-exclamation-triangle text-warning me-2 fs-7.5"></i>Alérgicos
                                                     </button>
                                                 </h2>
-                                                <div id="collapseFarmaco" class="accordion-collapse collapse" aria-labelledby="headingFarmaco" data-bs-parent="#accordionAntecedentes">
+                                                <div id="collapseAlergico" class="accordion-collapse collapse" aria-labelledby="headingAlergico" data-bs-parent="#accordionAntecedentes">
                                                     <div class="accordion-body p-2.5">
-                                                        <div id="list-farmacos-existentes" class="mb-3 border rounded-2 p-2 bg-light scroll-independent" style="max-height: 120px; overflow-y: auto;">
+                                                        <div id="list-alergicos-existentes" class="mb-3 border rounded-2 p-2 bg-light scroll-independent" style="max-height: 120px; overflow-y: auto;">
                                                             <!-- Dynamic -->
                                                         </div>
-                                                        <form id="form-farmaco" class="border-top pt-2">
-                                                            <div class="fw-bold text-primary fs-8.5 mb-1.5"><i class="bi bi-plus-circle me-1"></i>Registrar Medicamento</div>
+                                                        <form id="form-alergico" class="border-top pt-2">
+                                                            <div class="fw-bold text-primary fs-8.5 mb-1.5"><i class="bi bi-plus-circle me-1"></i>Registrar Alergia</div>
                                                             <div class="row g-2">
-                                                                <div class="col-7">
-                                                                    <label class="form-label fs-9 mb-0.5" for="far_descripcion">Medicamento</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="far_descripcion" placeholder="Ej: Losartán 50mg" required>
-                                                                </div>
-                                                                <div class="col-5">
-                                                                    <label class="form-label fs-9 mb-0.5" for="far_codigo">Código</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8 font-monospace" id="far_codigo" placeholder="Ej: C09CA01">
+                                                                <div class="col-6">
+                                                                    <label class="form-label fs-9 mb-0.5" for="ale_tipo">Tipo</label>
+                                                                    <select class="form-select py-0.5 px-2 fs-8" id="ale_tipo">
+                                                                        <option value="01" selected>Medicamento</option>
+                                                                        <option value="02">Alimento</option>
+                                                                        <option value="03">Sustancia Ambiental</option>
+                                                                        <option value="04">Contacto dérmico</option>
+                                                                        <option value="05">Picadura de insecto</option>
+                                                                        <option value="06">Otra</option>
+                                                                    </select>
                                                                 </div>
                                                                 <div class="col-6">
-                                                                    <label class="form-label fs-9 mb-0.5" for="far_estado">Estado</label>
-                                                                    <select class="form-select py-0.5 px-2 fs-8" id="far_estado">
+                                                                    <label class="form-label fs-9 mb-0.5" for="ale_estado">Estado</label>
+                                                                    <select class="form-select py-0.5 px-2 fs-8" id="ale_estado">
                                                                         <option value="active" selected>Activo</option>
-                                                                        <option value="completed">Completado</option>
-                                                                        <option value="stopped">Suspendido</option>
+                                                                        <option value="inactive">Inactivo</option>
+                                                                        <option value="resolved">Resuelto</option>
                                                                     </select>
                                                                 </div>
                                                                 <div class="col-12">
-                                                                    <label class="form-label fs-9 mb-0.5" for="far_observaciones">Indicaciones</label>
-                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="far_observaciones" placeholder="Ej: 1 tableta diaria">
+                                                                    <label class="form-label fs-9 mb-0.5" for="ale_descripcion">Alergeno / Descripción</label>
+                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="ale_descripcion" placeholder="Ej: Penicilina, Nueces" required>
                                                                 </div>
+                                                                <div class="col-6">
+                                                                    <label class="form-label fs-9 mb-0.5" for="ale_verif">Verificación</label>
+                                                                    <select class="form-select py-0.5 px-2 fs-8" id="ale_verif">
+                                                                        <option value="confirmed" selected>Confirmado</option>
+                                                                        <option value="unconfirmed">Sin Confirmar</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-6">
+                                                                    <label class="form-label fs-9 mb-0.5" for="ale_observaciones">Observaciones</label>
+                                                                    <input type="text" class="form-control py-0.5 px-2 fs-8" id="ale_observaciones" placeholder="Detalles...">
+                                                                </div>
+                                                                <input type="hidden" id="ale_codigo" value="">
                                                                 <div class="col-12 text-end">
                                                                     <button type="submit" class="btn btn-sky py-0.5 px-2.5 fs-9"><i class="bi bi-save me-1"></i>Guardar</button>
                                                                 </div>
@@ -1155,6 +1129,9 @@
     <!-- Core CDNs: jQuery 3.6.0, Bootstrap 5 JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Components -->
+    <script src="js/components/AntecedentesDrawer.js"></script>
     
     <!-- Application Logic -->
     <script src="js/app.js?v=1.1"></script>
