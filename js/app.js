@@ -170,7 +170,15 @@ class UiService {
      * Renders and displays a premium Bootstrap Modal showing the raw FHIR JSON bundle.
      * @param {object} bundleJson - MAPPED FHIR bundle
      */
-    showFhirResourceModal(bundleJson) {
+    /**
+     * Renders and displays a premium Bootstrap Modal showing the raw FHIR JSON bundle,
+     * the response from get_datos_tokenizar, the response from URL_GET_TOKEN_RDA, and the response from URL_SEND_FHIR.
+     * @param {object} bundleJson - MAPPED FHIR bundle
+     * @param {object} tokenizarJson - Response from get_datos_tokenizar.php
+     * @param {object} rdaTokenJson - Response from URL_GET_TOKEN_RDA webservice
+     * @param {object} sendFhirResponse - Response from URL_SEND_FHIR webservice
+     */
+    showFhirResourceModal(bundleJson, tokenizarJson = null, rdaTokenJson = null, sendFhirResponse = null) {
         $('#fhir-bundle-modal').remove();
 
         const modalHtml = `
@@ -179,19 +187,78 @@ class UiService {
                     <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
                         <div class="modal-header bg-dark text-white border-0 py-3">
                             <h5 class="modal-title fs-6 fw-bold" id="fhirBundleModalLabel">
-                                <i class="bi bi-filetype-json text-info me-2"></i>Recurso HL7 FHIR - Resumen Digital de Atención (RDA)
+                                <i class="bi bi-filetype-json text-info me-2"></i>Recursos Generados y Respuestas de Integración
                             </h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body bg-light p-4">
-                            <p class="text-secondary small mb-3">
-                                Este es el recurso **FHIR Bundle (type: document)** generado para el Resumen Digital de Atención (RDA) del paciente, mapeando los diagnósticos, fármacos y antecedentes clínicos:
-                            </p>
-                            <div class="fhir-resource-viewer position-relative">
-                                <pre class="mb-0"><code class="language-json" id="fhir-json-block">${JSON.stringify(bundleJson, null, 2)}</code></pre>
-                                <button class="btn btn-sm btn-sky position-absolute top-0 end-0 m-3 px-3 py-1 fs-9" id="btn-copy-fhir-json">
-                                    <i class="bi bi-clipboard me-1"></i>Copiar JSON
-                                </button>
+                            <ul class="nav nav-pills mb-3 gap-2" id="json-modal-tabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active fw-bold text-dark border-0 rounded-pill px-3 py-1.5 fs-8" id="fhir-tab" data-bs-toggle="tab" data-bs-target="#fhir-panel" type="button" role="tab" aria-controls="fhir-panel" aria-selected="true">
+                                        <i class="bi bi-file-earmark-code text-primary me-1"></i>JSON FHIR (RDA)
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link fw-bold text-dark border-0 rounded-pill px-3 py-1.5 fs-8" id="tokenizar-tab" data-bs-toggle="tab" data-bs-target="#tokenizar-panel" type="button" role="tab" aria-controls="tokenizar-panel" aria-selected="false">
+                                        <i class="bi bi-shield-lock text-success me-1"></i>Respuesta Tokenizar
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link fw-bold text-dark border-0 rounded-pill px-3 py-1.5 fs-8" id="rda-token-tab" data-bs-toggle="tab" data-bs-target="#rda-token-panel" type="button" role="tab" aria-controls="rda-token-panel" aria-selected="false">
+                                        <i class="bi bi-key text-warning me-1"></i>Token RDA
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link fw-bold text-dark border-0 rounded-pill px-3 py-1.5 fs-8" id="send-fhir-tab" data-bs-toggle="tab" data-bs-target="#send-fhir-panel" type="button" role="tab" aria-controls="send-fhir-panel" aria-selected="false">
+                                        <i class="bi bi-cloud-arrow-up text-danger me-1"></i>Respuesta Envío FHIR
+                                    </button>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="json-modal-tab-content">
+                                <div class="tab-pane fade show active" id="fhir-panel" role="tabpanel" aria-labelledby="fhir-tab">
+                                    <p class="text-secondary small mb-3">
+                                        Este es el recurso **FHIR Bundle (type: document)** generado para el Resumen Digital de Atención (RDA):
+                                    </p>
+                                    <div class="fhir-resource-viewer position-relative rounded shadow-sm overflow-hidden" style="background: #1e1e1e;">
+                                        <pre class="mb-0 p-3" style="max-height: 400px; overflow-y: auto;"><code class="language-json" id="fhir-json-block" style="color: #abb2bf; font-family: monospace; font-size: 0.8rem; display: block;">${JSON.stringify(bundleJson, null, 2)}</code></pre>
+                                        <button class="btn btn-sm btn-sky position-absolute top-0 end-0 m-3 px-3 py-1 fs-9" id="btn-copy-fhir-json">
+                                            <i class="bi bi-clipboard me-1"></i>Copiar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="tokenizar-panel" role="tabpanel" aria-labelledby="tokenizar-tab">
+                                    <p class="text-secondary small mb-3">
+                                        Respuesta obtenida del endpoint de tokenización (**get_datos_tokenizar.php**):
+                                    </p>
+                                    <div class="fhir-resource-viewer position-relative rounded shadow-sm overflow-hidden" style="background: #1e1e1e;">
+                                        <pre class="mb-0 p-3" style="max-height: 400px; overflow-y: auto;"><code class="language-json" id="tokenizar-json-block" style="color: #abb2bf; font-family: monospace; font-size: 0.8rem; display: block;">${tokenizarJson ? JSON.stringify(tokenizarJson, null, 2) : 'No se pudo obtener la respuesta de tokenización o no hay datos.'}</code></pre>
+                                        <button class="btn btn-sm btn-sky position-absolute top-0 end-0 m-3 px-3 py-1 fs-9" id="btn-copy-tokenizar-json">
+                                            <i class="bi bi-clipboard me-1"></i>Copiar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="rda-token-panel" role="tabpanel" aria-labelledby="rda-token-tab">
+                                    <p class="text-secondary small mb-3">
+                                        Respuesta obtenida del webservice de autenticación RDA (**URL_GET_TOKEN_RDA**):
+                                    </p>
+                                    <div class="fhir-resource-viewer position-relative rounded shadow-sm overflow-hidden" style="background: #1e1e1e;">
+                                        <pre class="mb-0 p-3" style="max-height: 400px; overflow-y: auto;"><code class="language-json" id="rda-token-json-block" style="color: #abb2bf; font-family: monospace; font-size: 0.8rem; display: block;">${rdaTokenJson ? JSON.stringify(rdaTokenJson, null, 2) : 'No se pudo obtener la respuesta del webservice RDA.'}</code></pre>
+                                        <button class="btn btn-sm btn-sky position-absolute top-0 end-0 m-3 px-3 py-1 fs-9" id="btn-copy-rda-token-json">
+                                            <i class="bi bi-clipboard me-1"></i>Copiar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="send-fhir-panel" role="tabpanel" aria-labelledby="send-fhir-tab">
+                                    <p class="text-secondary small mb-3">
+                                        Respuesta obtenida del webservice al enviar el JSON FHIR (**URL_SEND_FHIR + $enviar-rda-paciente**):
+                                    </p>
+                                    <div class="fhir-resource-viewer position-relative rounded shadow-sm overflow-hidden" style="background: #1e1e1e;">
+                                        <pre class="mb-0 p-3" style="max-height: 400px; overflow-y: auto;"><code class="language-json" id="send-fhir-json-block" style="color: #abb2bf; font-family: monospace; font-size: 0.8rem; display: block;">${sendFhirResponse ? JSON.stringify(sendFhirResponse, null, 2) : 'No se pudo obtener la respuesta del envío FHIR.'}</code></pre>
+                                        <button class="btn btn-sm btn-sky position-absolute top-0 end-0 m-3 px-3 py-1 fs-9" id="btn-copy-send-fhir-json">
+                                            <i class="bi bi-clipboard me-1"></i>Copiar
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer bg-white border-top-0 py-3">
@@ -204,14 +271,62 @@ class UiService {
 
         $('body').append(modalHtml);
 
-        // Bind copy button event
+        // Custom style overrides for pills active state
+        $('<style>')
+            .prop('type', 'text/css')
+            .html(`
+                #json-modal-tabs .nav-link { background-color: #f1f3f5; }
+                #json-modal-tabs .nav-link.active { background-color: #e9ecef !important; border-bottom: 2px solid #007bff !important; border-radius: 20px !important; }
+            `)
+            .appendTo('head');
+
+        // Bind copy button events
         $('#btn-copy-fhir-json').on('click', function() {
             const textToCopy = $('#fhir-json-block').text();
             navigator.clipboard.writeText(textToCopy).then(() => {
                 const $btn = $(this);
                 $btn.removeClass('btn-sky').addClass('btn-success text-white').html('<i class="bi bi-check2"></i> Copiado');
                 setTimeout(() => {
-                    $btn.removeClass('btn-success text-white').addClass('btn-sky').html('<i class="bi bi-clipboard me-1"></i>Copiar JSON');
+                    $btn.removeClass('btn-success text-white').addClass('btn-sky').html('<i class="bi bi-clipboard me-1"></i>Copiar');
+                }, 1500);
+            }).catch(err => {
+                console.error("Failed to copy text: ", err);
+            });
+        });
+
+        $('#btn-copy-tokenizar-json').on('click', function() {
+            const textToCopy = $('#tokenizar-json-block').text();
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const $btn = $(this);
+                $btn.removeClass('btn-sky').addClass('btn-success text-white').html('<i class="bi bi-check2"></i> Copiado');
+                setTimeout(() => {
+                    $btn.removeClass('btn-success text-white').addClass('btn-sky').html('<i class="bi bi-clipboard me-1"></i>Copiar');
+                }, 1500);
+            }).catch(err => {
+                console.error("Failed to copy text: ", err);
+            });
+        });
+
+        $('#btn-copy-rda-token-json').on('click', function() {
+            const textToCopy = $('#rda-token-json-block').text();
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const $btn = $(this);
+                $btn.removeClass('btn-sky').addClass('btn-success text-white').html('<i class="bi bi-check2"></i> Copiado');
+                setTimeout(() => {
+                    $btn.removeClass('btn-success text-white').addClass('btn-sky').html('<i class="bi bi-clipboard me-1"></i>Copiar');
+                }, 1500);
+            }).catch(err => {
+                console.error("Failed to copy text: ", err);
+            });
+        });
+
+        $('#btn-copy-send-fhir-json').on('click', function() {
+            const textToCopy = $('#send-fhir-json-block').text();
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const $btn = $(this);
+                $btn.removeClass('btn-sky').addClass('btn-success text-white').html('<i class="bi bi-check2"></i> Copiado');
+                setTimeout(() => {
+                    $btn.removeClass('btn-success text-white').addClass('btn-sky').html('<i class="bi bi-clipboard me-1"></i>Copiar');
                 }, 1500);
             }).catch(err => {
                 console.error("Failed to copy text: ", err);
@@ -1850,7 +1965,39 @@ class FormHandler {
                     await this.api.request('createIncapacidad.php', 'POST', incapPayload).catch(err => console.error("Error creating Incapacidad:", err));
                 }
 
-                // 5. Generate and Show FHIR RDA Patient Bundle via FHIRAPI
+                // 5. Generate and Show FHIR RDA Patient Bundle via FHIRAPI and tokenization details
+                let tokenizarResponse = null;
+                let rdaTokenResponse = null;
+                try {
+                    tokenizarResponse = await this.api.request('get_datos_tokenizar.php', 'POST', {
+                        idntfccion_mdcos: user ? user.id : null
+                    });
+
+                    if (tokenizarResponse && tokenizarResponse.status === 'success' && tokenizarResponse.data) {
+                        const rdaData = tokenizarResponse.data;
+                        const tokenUrl = this.config && this.config.URL_GET_TOKEN_RDA ? this.config.URL_GET_TOKEN_RDA : 'https://login.microsoftonline.com/3d4b3d76-b910-426c-bd8f-bd964e3e1b53/oauth2/v2.0/token';
+
+                        try {
+                            rdaTokenResponse = await this.api.request('get_token_rda.php', 'POST', {
+                                token_url: tokenUrl,
+                                client_id: rdaData.client_id_rda,
+                                client_secret: rdaData.client_secret,
+                                scope: rdaData.scope
+                            });
+                        } catch (rdaTokenError) {
+                            console.error("Error fetching RDA Token:", rdaTokenError);
+                            rdaTokenResponse = {
+                                error: true,
+                                status: rdaTokenError.status,
+                                responseText: rdaTokenError.message || 'Error en el servidor proxy'
+                            };
+                        }
+                    }
+                } catch (tokError) {
+                    console.error("Error fetching tokenizar data:", tokError);
+                }
+
+                let sendFhirResponse = null;
                 try {
                     const fhirResponse = await $.ajax({
                         url: '../FHIRAPI/index.php',
@@ -1862,7 +2009,30 @@ class FormHandler {
                         dataType: 'json'
                     });
                     console.log("FHIR Bundle RDA successfully generated:", fhirResponse);
-                    this.ui.showFhirResourceModal(fhirResponse);
+
+                    // Send FHIR RDA to Sandbox via proxy if token exists
+                    const accessToken = rdaTokenResponse ? (rdaTokenResponse.access_token || rdaTokenResponse.accessToken) : null;
+                    if (accessToken) {
+                        const sendPrefix = this.config && this.config.URL_SEND_FHIR ? this.config.URL_SEND_FHIR : 'https://sandbox.ihcecol.gov.co/ihce/Composition/';
+                        const sendUrl = sendPrefix + '$enviar-rda-paciente';
+
+                        try {
+                            sendFhirResponse = await this.api.request('send_fhir_rda.php', 'POST', {
+                                send_url: sendUrl,
+                                token: accessToken,
+                                fhir_data: fhirResponse
+                            });
+                        } catch (sendError) {
+                            console.error("Error sending FHIR RDA:", sendError);
+                            sendFhirResponse = {
+                                error: true,
+                                status: sendError.status,
+                                responseText: sendError.message || 'Error en el proxy de envío'
+                            };
+                        }
+                    }
+
+                    this.ui.showFhirResourceModal(fhirResponse, tokenizarResponse, rdaTokenResponse, sendFhirResponse);
                     this.ui.showToast('JSON FHIR del RDA generado correctamente.', 'success');
                 } catch (fhirError) {
                     console.error("Error generating FHIR RDA Bundle:", fhirError);
@@ -1952,7 +2122,25 @@ class App {
         this.formHandler = new FormHandler(this.api, this.ui, this.storage);
     }
 
-    init() {
+    async init() {
+        // Cargar variables de entorno del frontend (.env alternativo)
+        try {
+            const response = await fetch('config.json');
+            if (response.ok) {
+                const config = await response.json();
+                this.formHandler.config = config; // Guardar config en formHandler
+                if (config && config.API_BASE_URL) {
+                    let url = config.API_BASE_URL.trim();
+                    if (url.endsWith('/')) {
+                        url = url.slice(0, -1);
+                    }
+                    this.api.baseUrl = url;
+                }
+            }
+        } catch (e) {
+            console.warn("Could not load config.json, using default relative path for API:", e);
+        }
+
         this.bindEvents();
         this.evaluateRouting();
     }
@@ -2069,6 +2257,54 @@ class App {
 
         // Diagnóstico CIE-10 autocomplete search with Debounce and min-length check
         let searchCie10Timeout = null;
+
+        const handleExactMatchCie10 = async () => {
+            const query = $('#search-cie10-input').val().trim().toUpperCase();
+            if (!query) return false;
+
+            const cie10Pattern = /^[A-Z][0-9]{2,3}[A-Z0-9]?$/i;
+            if (cie10Pattern.test(query)) {
+                try {
+                    const res = await this.api.request(`getCIE10.php?search=${encodeURIComponent(query)}`, 'GET');
+                    let results = [];
+                    if (res && res.status === 'success' && res.data && res.data.length > 0) {
+                        results = res.data;
+                    }
+                    
+                    const match = results.find(item => item.code.toUpperCase() === query) ||
+                                  (results.length > 0 && results[0].code.toUpperCase() === query ? results[0] : null);
+                    
+                    if (match) {
+                        this.formHandler.addDiagnosis(match.code, match.display);
+                        $('#search-cie10-input').val('');
+                        $('#search-cie10-dropdown').addClass('d-none');
+                        
+                        // Focus next field (Priority Select)
+                        $('#evo_indicador_diagnostico').focus();
+                        return true;
+                    }
+                } catch (err) {
+                    console.error("Error in exact match query:", err);
+                }
+            }
+            return false;
+        };
+
+        $('#search-cie10-input').on('keydown', async (e) => {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                const handled = await handleExactMatchCie10();
+                if (handled) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        $('#search-cie10-input').on('blur', () => {
+            setTimeout(async () => {
+                await handleExactMatchCie10();
+            }, 200);
+        });
+
         $('#search-cie10-input').on('input', (e) => {
             const query = $(e.target).val().trim();
             const dropdown = $('#search-cie10-dropdown');
@@ -2112,9 +2348,9 @@ class App {
                     if (results.length > 0) {
                         results.forEach(item => {
                             listContainer.append(`
-                                <button type="button" class="list-group-item list-group-item-action cie10-item text-start d-flex align-items-center p-2" data-code="${item.code}" data-desc="${item.display}">
-                                    <span class="badge bg-secondary-subtle text-secondary-emphasis me-2 fs-8.5 font-monospace" style="min-width: 60px;">${item.code}</span>
-                                    <span class="small text-truncate" title="${item.display}">${item.display}</span>
+                                <button type="button" class="list-group-item list-group-item-action cie10-item text-start d-flex flex-column align-items-start p-2 border-0 border-bottom" data-code="${item.code}" data-desc="${item.display}">
+                                    <span class="badge bg-primary-subtle text-primary mb-1 fw-bold font-monospace fs-8.5">${item.code}</span>
+                                    <span class="small text-dark lh-sm text-wrap w-100 text-start d-block" title="${item.display}">${item.display}</span>
                                 </button>
                             `);
                         });
@@ -2138,9 +2374,9 @@ class App {
                     if (localResults.length > 0) {
                         localResults.forEach(item => {
                             listContainer.append(`
-                                <button type="button" class="list-group-item list-group-item-action cie10-item text-start d-flex align-items-center p-2" data-code="${item.code}" data-desc="${item.display}">
-                                    <span class="badge bg-secondary-subtle text-secondary-emphasis me-2 fs-8.5 font-monospace" style="min-width: 60px;">${item.code}</span>
-                                    <span class="small text-truncate" title="${item.display}">${item.display}</span>
+                                <button type="button" class="list-group-item list-group-item-action cie10-item text-start d-flex flex-column align-items-start p-2 border-0 border-bottom" data-code="${item.code}" data-desc="${item.display}">
+                                    <span class="badge bg-primary-subtle text-primary mb-1 fw-bold font-monospace fs-8.5">${item.code}</span>
+                                    <span class="small text-dark lh-sm text-wrap w-100 text-start d-block" title="${item.display}">${item.display}</span>
                                 </button>
                             `);
                         });

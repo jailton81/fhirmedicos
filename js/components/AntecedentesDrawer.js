@@ -97,13 +97,14 @@ class AntecedentesDrawer {
                                     <!-- Micro Form -->
                                     <form class="hidden-form d-none bg-light border border-secondary border-opacity-15 rounded p-2.5 mb-1" id="form-patologicos">
                                         <div class="row g-2 mb-2">
-                                            <div class="col-7">
+                                            <div class="col-7 position-relative">
                                                 <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Diagnóstico (Descripción)</label>
-                                                <input type="text" name="descripcion" class="form-control form-control-sm" placeholder="Ej: Hipertensión Arterial" style="font-size: 0.75rem;" required>
+                                                <input type="text" name="descripcion" class="form-control form-control-sm search-cie10-desc" placeholder="Ej: Hipertensión Arterial" style="font-size: 0.75rem;" autocomplete="off" required>
+                                                <div class="position-absolute w-100 shadow-sm z-3 bg-white border rounded d-none search-cie10-results" style="max-height: 140px; overflow-y: auto; left: 0; right: 0; z-index: 1050;"></div>
                                             </div>
                                             <div class="col-5">
                                                 <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Código CIE-10</label>
-                                                <input type="text" name="codigo" class="form-control form-control-sm font-monospace text-uppercase" placeholder="Ej: I10" style="font-size: 0.75rem;">
+                                                <input type="text" name="codigo" class="form-control form-control-sm font-monospace text-uppercase" placeholder="Ej: I10X" style="font-size: 0.75rem;">
                                             </div>
                                             <div class="col-6">
                                                 <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Estado Clínico</label>
@@ -228,13 +229,14 @@ class AntecedentesDrawer {
                                                     <option value="UNC">Tío/a</option>
                                                 </select>
                                             </div>
-                                            <div class="col-6">
+                                            <div class="col-6 position-relative">
                                                 <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Diagnóstico (Descripción)</label>
-                                                <input type="text" name="descripcion" class="form-control form-control-sm" placeholder="Ej: Diabetes Tipo II" style="font-size: 0.75rem;" required>
+                                                <input type="text" name="descripcion" class="form-control form-control-sm search-cie10-desc" placeholder="Ej: Diabetes Tipo II" style="font-size: 0.75rem;" autocomplete="off" required>
+                                                <div class="position-absolute w-100 shadow-sm z-3 bg-white border rounded d-none search-cie10-results" style="max-height: 140px; overflow-y: auto; left: 0; right: 0; z-index: 1050;"></div>
                                             </div>
                                             <div class="col-4">
                                                 <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Código CIE-10</label>
-                                                <input type="text" name="codigo" class="form-control form-control-sm font-monospace text-uppercase" placeholder="Ej: E11" style="font-size: 0.75rem;">
+                                                <input type="text" name="codigo" class="form-control form-control-sm font-monospace text-uppercase" placeholder="Ej: E119" style="font-size: 0.75rem;">
                                             </div>
                                             <div class="col-4">
                                                 <label class="form-label text-secondary mb-0.5 small" style="font-size: 0.7rem; font-weight: 500;">Edad Diag.</label>
@@ -494,6 +496,207 @@ class AntecedentesDrawer {
                 const formId = form.id;
                 const type = formId.replace('form-', '');
                 await this.handleFormSubmit(type, form);
+            });
+        });
+
+        // Integración de buscador predictivo CIE-10 para Patológicos y Familiares
+        let searchTimeout = null;
+        const searchInputs = this.drawerElement.querySelectorAll('.search-cie10-desc');
+        searchInputs.forEach(input => {
+            const form = input.closest('form');
+            const resultsDiv = form.querySelector('.search-cie10-results');
+            const codigoInput = form.querySelector('input[name="codigo"]');
+
+            const handleExactMatch = async () => {
+                const query = input.value.trim().toUpperCase();
+                if (!query) return false;
+
+                const cie10Pattern = /^[A-Z][0-9]{2,3}[A-Z0-9]?$/i;
+                if (cie10Pattern.test(query)) {
+                    try {
+                        const token = localStorage.getItem('medico_auth_token') || '';
+                        const response = await fetch(`../APIPacientes/getCIE10.php?search=${encodeURIComponent(query)}`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        const res = await response.json();
+                        
+                        let results = [];
+                        if (res && res.status === 'success' && res.data && res.data.length > 0) {
+                            results = res.data;
+                        }
+
+                        const match = results.find(item => item.code.toUpperCase() === query) || 
+                                      (results.length > 0 && results[0].code.toUpperCase() === query ? results[0] : null);
+
+                        if (match) {
+                            input.value = match.display;
+                            if (codigoInput) {
+                                codigoInput.value = match.code;
+                            }
+                            resultsDiv.innerHTML = '';
+                            resultsDiv.classList.add('d-none');
+                            
+                            // Encontrar y enfocar el siguiente campo en el formulario
+                            const nextInput = form.querySelector('input[name="edad"], select[name="clinicalStatus"], input[name="observaciones"]');
+                            if (nextInput) {
+                                nextInput.focus();
+                            }
+                            return true;
+                        }
+                    } catch (err) {
+                        console.error('Error in exact match lookup:', err);
+                    }
+                }
+                return false;
+            };
+
+            input.addEventListener('keydown', async (e) => {
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                    const handled = await handleExactMatch();
+                    if (handled) {
+                        e.preventDefault();
+                    }
+                }
+            });
+
+            input.addEventListener('blur', () => {
+                setTimeout(async () => {
+                    await handleExactMatch();
+                }, 200);
+            });
+
+            input.addEventListener('input', (e) => {
+                const query = input.value.trim();
+                
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+
+                if (query.length < 3) {
+                    resultsDiv.innerHTML = '';
+                    resultsDiv.classList.add('d-none');
+                    return;
+                }
+
+                searchTimeout = setTimeout(async () => {
+                    resultsDiv.innerHTML = '<div class="text-muted text-center py-2 fs-8.5"><span class="spinner-border spinner-border-sm text-primary me-1"></span>Buscando...</div>';
+                    resultsDiv.classList.remove('d-none');
+
+                    try {
+                        const token = localStorage.getItem('medico_auth_token') || '';
+                        const response = await fetch(`../APIPacientes/getCIE10.php?search=${encodeURIComponent(query)}`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        const res = await response.json();
+                        
+                        let results = [];
+                        if (res && res.status === 'success' && res.data && res.data.length > 0) {
+                            results = res.data;
+                        } else if (typeof CIE10_DICTIONARY !== 'undefined') {
+                            const queryLower = query.toLowerCase();
+                            results = CIE10_DICTIONARY.filter(item => 
+                                item.code.toLowerCase().includes(queryLower) || 
+                                item.desc.toLowerCase().includes(queryLower)
+                            ).map(item => ({
+                                code: item.code,
+                                display: item.desc
+                            })).slice(0, 10);
+                        }
+
+                        resultsDiv.innerHTML = '';
+                        if (results.length > 0) {
+                            const listGroup = document.createElement('div');
+                            listGroup.className = 'list-group list-group-flush';
+                            results.forEach(item => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'list-group-item list-group-item-action text-start d-flex flex-column align-items-start p-2 border-0 border-bottom';
+                                btn.style.fontSize = '0.75rem';
+                                btn.innerHTML = `
+                                    <span class="badge bg-primary-subtle text-primary mb-1 fw-bold font-monospace" style="font-size: 0.65rem;">${item.code}</span>
+                                    <span class="small text-dark lh-sm text-wrap text-start w-100" style="display: block;">${item.display}</span>
+                                `;
+                                btn.addEventListener('click', (ev) => {
+                                    ev.preventDefault();
+                                    input.value = item.display;
+                                    if (codigoInput) {
+                                        codigoInput.value = item.code;
+                                    }
+                                    resultsDiv.innerHTML = '';
+                                    resultsDiv.classList.add('d-none');
+                                });
+                                listGroup.appendChild(btn);
+                            });
+                            resultsDiv.appendChild(listGroup);
+                        } else {
+                            resultsDiv.innerHTML = '<div class="text-muted text-center py-2 fs-8.5">Sin resultados</div>';
+                        }
+                    } catch (error) {
+                        console.error('Error fetching CIE10 in drawer, falling back:', error);
+                        let results = [];
+                        if (typeof CIE10_DICTIONARY !== 'undefined') {
+                            const queryLower = query.toLowerCase();
+                            results = CIE10_DICTIONARY.filter(item => 
+                                item.code.toLowerCase().includes(queryLower) || 
+                                item.desc.toLowerCase().includes(queryLower)
+                            ).map(item => ({
+                                code: item.code,
+                                display: item.desc
+                            })).slice(0, 10);
+                        }
+                        
+                        resultsDiv.innerHTML = '';
+                        if (results.length > 0) {
+                            const listGroup = document.createElement('div');
+                            listGroup.className = 'list-group list-group-flush';
+                            results.forEach(item => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'list-group-item list-group-item-action text-start d-flex flex-column align-items-start p-2 border-0 border-bottom';
+                                btn.style.fontSize = '0.75rem';
+                                btn.innerHTML = `
+                                    <span class="badge bg-primary-subtle text-primary mb-1 fw-bold font-monospace" style="font-size: 0.65rem;">${item.code}</span>
+                                    <span class="small text-dark lh-sm text-wrap text-start w-100" style="display: block;">${item.display}</span>
+                                `;
+                                btn.addEventListener('click', (ev) => {
+                                    ev.preventDefault();
+                                    input.value = item.display;
+                                    if (codigoInput) {
+                                        codigoInput.value = item.code;
+                                    }
+                                    resultsDiv.innerHTML = '';
+                                    resultsDiv.classList.add('d-none');
+                                });
+                                listGroup.appendChild(btn);
+                            });
+                            resultsDiv.appendChild(listGroup);
+                        } else {
+                            resultsDiv.innerHTML = '<div class="text-danger text-center py-2 fs-8.5">Error al buscar</div>';
+                        }
+                    }
+                }, 300);
+            });
+        });
+
+        // Ocultar dropdown al hacer click fuera del input/dropdown
+        document.addEventListener('click', (e) => {
+            if (!this.drawerElement) return;
+            const dropdowns = this.drawerElement.querySelectorAll('.search-cie10-results');
+            dropdowns.forEach(dropdown => {
+                const form = dropdown.closest('form');
+                if (!form) return;
+                const input = form.querySelector('.search-cie10-desc');
+                if (input && !input.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('d-none');
+                }
             });
         });
     }
