@@ -1011,9 +1011,13 @@ class FormHandler {
             const pHistoryStatus = this.api.request('getEstados.php?status=history-status', 'GET').catch(err => ({ error: true, data: [] }));
             const pParentesco = this.api.request('getEstados.php?status=Parentesco', 'GET').catch(err => ({ error: true, data: [] }));
             const pTipoAlergia = this.api.request('getEstados.php?status=tipoalergia', 'GET').catch(err => ({ error: true, data: [] }));
+            const pFrecStatus = this.api.request('getEstados.php?status=UnidadTiempo', 'GET').catch(err => ({ error: true, data: [] }));
+            const pViaStatus = this.api.request('getEstados.php?status=VAD', 'GET').catch(err => ({ error: true, data: [] }));
+            const pDosisStatus = this.api.request('getEstados.php?status=UMM', 'GET').catch(err => ({ error: true, data: [] }));
+            const pTechStatus = this.api.request('getEstados.php?status=TipoTecnologiaSalud', 'GET').catch(err => ({ error: true, data: [] }));
 
-            const [resStatus, resAllergyStatus, resVerif, resMedStatus, resHistoryStatus, resParentesco, resTipoAlergia] = await Promise.all([
-                pStatus, pAllergyStatus, pVerif, pMedStatus, pHistoryStatus, pParentesco, pTipoAlergia
+            const [resStatus, resAllergyStatus, resVerif, resMedStatus, resHistoryStatus, resParentesco, resTipoAlergia, resFrecStatus, resViaStatus, resDosisStatus, resTechStatus] = await Promise.all([
+                pStatus, pAllergyStatus, pVerif, pMedStatus, pHistoryStatus, pParentesco, pTipoAlergia, pFrecStatus, pViaStatus, pDosisStatus, pTechStatus
             ]);
 
             if (resParentesco && resParentesco.status === 'success' && resParentesco.data) {
@@ -1119,6 +1123,58 @@ class FormHandler {
                         ).join('');
                     }
                 }
+            }
+
+            // Populate Vía de Administración (CODIGO_VIA)
+            if (resViaStatus && resViaStatus.status === 'success' && resViaStatus.data) {
+                const selectVia = $('#CODIGO_VIA');
+                selectVia.empty();
+                selectVia.append(new Option('Seleccione vía...', '', true, true));
+                selectVia.children().first().attr('disabled', true);
+                resViaStatus.data.forEach(item => {
+                    selectVia.append(new Option(item.display, item.code));
+                });
+            }
+
+            // Populate Unidad de Medida de Frecuencia (UM_FRECUENCIA) y Duración (UM_DURACION)
+            if (resFrecStatus && resFrecStatus.status === 'success' && resFrecStatus.data) {
+                const selectFrec = $('#UM_FRECUENCIA');
+                selectFrec.empty();
+                selectFrec.append(new Option('Seleccione...', '', true, true));
+                selectFrec.children().first().attr('disabled', true);
+                resFrecStatus.data.forEach(item => {
+                    selectFrec.append(new Option(item.display, item.code));
+                });
+
+                const selectDur = $('#UM_DURACION');
+                selectDur.empty();
+                selectDur.append(new Option('Seleccione...', '', true, true));
+                selectDur.children().first().attr('disabled', true);
+                resFrecStatus.data.forEach(item => {
+                    selectDur.append(new Option(item.display, item.code));
+                });
+            }
+
+            // Populate Unidad de Medida de Dosis (UM_DOSIS)
+            if (resDosisStatus && resDosisStatus.status === 'success' && resDosisStatus.data) {
+                const selectDosis = $('#UM_DOSIS');
+                selectDosis.empty();
+                selectDosis.append(new Option('Seleccione...', '', true, true));
+                selectDosis.children().first().attr('disabled', true);
+                resDosisStatus.data.forEach(item => {
+                    selectDosis.append(new Option(item.display, item.code));
+                });
+            }
+
+            // Populate Tipo de Tecnología de Salud (TIPO_TECNOLOGIA)
+            if (resTechStatus && resTechStatus.status === 'success' && resTechStatus.data) {
+                const selectTech = $('#TIPO_TECNOLOGIA');
+                selectTech.empty();
+                selectTech.append(new Option('Seleccione tecnología...', '', true, true));
+                selectTech.children().first().attr('disabled', true);
+                resTechStatus.data.forEach(item => {
+                    selectTech.append(new Option(item.display, item.code));
+                });
             }
         } catch (error) {
             console.error("Error al cargar estados y verificaciones:", error);
@@ -1645,6 +1701,17 @@ class FormHandler {
         this.currentPatientName = pacienteName;
         this.currentTimeline = [];
 
+        // Asegurar la existencia de los inputs de contexto global
+        if ($('#global_id_pcnte').length === 0) {
+            $('body').append('<input type="hidden" id="global_id_pcnte">');
+        }
+        if ($('#global_cnsctvo_pcnte').length === 0) {
+            $('body').append('<input type="hidden" id="global_cnsctvo_pcnte">');
+        }
+
+        $('#global_id_pcnte').val(pacienteId);
+        $('#global_cnsctvo_pcnte').val('1'); // Valor inicial predeterminado
+
         // Switch to clinical panel view
         this.ui.switchView('clinical-panel');
 
@@ -1775,6 +1842,10 @@ class FormHandler {
                     // Populate latest vital signs from the most recent entry
                     const sorted = resTimeline.data.sort((a,b) => parseInt(b.cnsctvo_pcnte) - parseInt(a.cnsctvo_pcnte));
                     const latest = sorted[0];
+                    
+                    // Actualizar el consecutivo de la atención actual (último + 1)
+                    const nextCns = parseInt(latest.cnsctvo_pcnte) + 1;
+                    $('#global_cnsctvo_pcnte').val(nextCns);
 
                     $('#prev-vital-ta').text(latest.prsion_artrial || '--');
                     $('#prev-vital-fc').text(latest.frcncia_crdca || '--');
@@ -2252,6 +2323,461 @@ class App {
                 $('#evo_imc').val(imc.toFixed(1));
             } else {
                 $('#evo_imc').val('');
+            }
+        });
+
+        // State for Clinical Cart
+        this.formHandler.medicationsCart = [];
+        this.formHandler.proceduresCart = [];
+        this.formHandler.incapacitiesCart = [];
+
+        const updateCartUI = () => {
+            // Update medications
+            const medList = $('#cart-medications-list');
+            medList.empty();
+            if (this.formHandler.medicationsCart.length === 0) {
+                medList.append('<li class="list-group-item text-muted text-center py-2.5 fs-9 italic" id="empty-meds-placeholder">No hay medicamentos agregados.</li>');
+            } else {
+                this.formHandler.medicationsCart.forEach((med, idx) => {
+                    const labelDci = med.descripcion_dci || '';
+                    const labelMed = med.descripcion_medicamento || '';
+                    const mainTitle = labelDci && labelMed ? `${labelDci} (${labelMed})` : (labelDci || labelMed || 'Medicamento');
+                    const techLabel = med.tipo_tecnologia_descripcion ? ` <span class="text-muted fs-9">(${med.tipo_tecnologia_descripcion})</span>` : '';
+                    
+                    const dosisStr = med.dosis ? `Tomar ${med.dosis} ${med.um_dosis_descripcion || med.um_dosis || ''}` : '';
+                    const frecStr = med.frecuencia ? `cada ${med.frecuencia} ${med.um_frecuencia_descripcion || med.um_frecuencia || ''}` : '';
+                    const durStr = med.duracion ? `por ${med.duracion} ${med.um_duracion_descripcion || med.um_duracion || ''}` : '';
+                    const viaStr = med.via ? `Vía: ${med.via}` : '';
+                    const posStr = med.posologia ? `(${med.posologia})` : '';
+
+                    const details = [dosisStr, frecStr, durStr, viaStr, posStr].filter(Boolean).join(' ');
+
+                    medList.append(`
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 fs-8.5">
+                            <div>
+                                <strong>${mainTitle}</strong>${techLabel}
+                                <div class="text-secondary" style="font-size: 0.75rem;">${details}</div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none btn-edit-cart-med" data-idx="${idx}">✏️</button>
+                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-danger btn-delete-cart-med" data-idx="${idx}">X</button>
+                            </div>
+                        </li>
+                    `);
+                });
+            }
+
+            // Update procedures
+            const procList = $('#cart-procedures-list');
+            procList.empty();
+            if (this.formHandler.proceduresCart.length === 0) {
+                procList.append('<li class="list-group-item text-muted text-center py-2.5 fs-9 italic" id="empty-procs-placeholder">No hay procedimientos agregados.</li>');
+            } else {
+                this.formHandler.proceduresCart.forEach((proc, idx) => {
+                    procList.append(`
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 fs-8.5">
+                            <div>
+                                <strong>${proc.descripcion}</strong> <span class="badge bg-secondary-subtle text-secondary fs-9.5">${proc.codigo}</span>
+                                <div class="text-secondary" style="font-size: 0.75rem;">Prioridad: ${proc.prioridad} | Justificación: ${proc.indicacion}</div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none btn-edit-cart-proc" data-idx="${idx}">✏️</button>
+                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-danger btn-delete-cart-proc" data-idx="${idx}">X</button>
+                            </div>
+                        </li>
+                    `);
+                });
+            }
+
+            // Update incapacidades
+            const incapList = $('#cart-incapacity-list');
+            incapList.empty();
+            if (this.formHandler.incapacitiesCart.length === 0) {
+                incapList.append('<li class="list-group-item text-muted text-center py-2.5 fs-9 italic" id="empty-incap-placeholder">No hay incapacidades registradas.</li>');
+            } else {
+                this.formHandler.incapacitiesCart.forEach((incap, idx) => {
+                    incapList.append(`
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 fs-8.5">
+                            <div>
+                                <strong>${incap.dias} días</strong> <span class="text-muted">(${incap.contingencia})</span>
+                                <div class="text-secondary" style="font-size: 0.75rem;">Inicio: ${incap.inicio} | Motivo: ${incap.motivo}</div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none btn-edit-cart-incap" data-idx="${idx}">✏️</button>
+                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-danger btn-delete-cart-incap" data-idx="${idx}">X</button>
+                            </div>
+                        </li>
+                    `);
+                });
+            }
+
+            // Update counter
+            const totalCount = this.formHandler.medicationsCart.length + this.formHandler.proceduresCart.length + this.formHandler.incapacitiesCart.length;
+            $('#cart-counter').text(totalCount);
+        };
+
+        // Copiar Justificación desde Notas
+        $(document).on('click', '#btn-copiar-justificacion', (e) => {
+            e.preventDefault();
+            const notas = $('#evo_plan').val().trim();
+            if (notas) {
+                $('#procedimiento_indicacion').val(notas);
+                this.ui.showToast('Justificación copiada desde Conducta y Plan.', 'info');
+            } else {
+                this.ui.showToast('No hay texto en Conducta y Plan para copiar.', 'warning');
+            }
+        });
+
+        // Autocomplete asíncrono para buscar_medicamento con la tabla IUM
+        let debounceTimer;
+        $(document).on('input', '#buscar_medicamento', (e) => {
+            clearTimeout(debounceTimer);
+            const query = $(e.currentTarget).val().trim();
+            const resultsDropdown = $('#resultados_ium');
+
+            if (query.length < 3) {
+                resultsDropdown.removeClass('show').empty();
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                this.api.request(`getIUM.php?search=${encodeURIComponent(query)}`, 'GET')
+                    .then(res => {
+                        resultsDropdown.empty();
+                        if (res && res.status === 'success' && res.data && res.data.length > 0) {
+                            res.data.forEach(item => {
+                                const optionText = item.display;
+                                const itemLi = $(`<li><a class="dropdown-item fs-8 py-1" href="#" style="white-space: normal;">${optionText}</a></li>`);
+                                
+                                itemLi.find('a').on('click', (evt) => {
+                                    evt.preventDefault();
+                                    $('#buscar_medicamento').val(optionText);
+                                    
+                                    // Separar DCI y Comercial del display format: DCI (COMERCIAL) - FORMA
+                                    let dci = '';
+                                    let comercial = '';
+                                    const match = optionText.match(/^([^(]+)(?:\(([^)]+)\))?/);
+                                    if (match) {
+                                        dci = match[1].trim();
+                                        comercial = match[2] ? match[2].trim() : dci;
+                                    } else {
+                                        dci = optionText;
+                                        comercial = optionText;
+                                    }
+                                    
+                                    $('#CODIGO_MEDICAMENTO').val(item.code || 'GENERIC');
+                                    $('#DESCRIPCION_MEDICAMENTO').val(comercial);
+                                    $('#CODIGO_DCI').val(item.code || 'GENERIC');
+                                    $('#DESCRIPCION_DCI').val(dci);
+                                    
+                                    resultsDropdown.removeClass('show').empty();
+                                    $('#DOSIS').focus();
+                                });
+                                resultsDropdown.append(itemLi);
+                            });
+                            resultsDropdown.addClass('show');
+                        } else {
+                            resultsDropdown.removeClass('show');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error al consultar IUM:', err);
+                        resultsDropdown.removeClass('show').empty();
+                    });
+            }, 300);
+        });
+
+        // Cerrar dropdown al hacer click fuera
+        $(document).on('click', (e) => {
+            if (!$(e.target).closest('.position-relative').length) {
+                $('#resultados_ium').removeClass('show');
+            }
+        });
+
+        // Eventos agregar al carrito
+        $(document).on('click', '#btn-agregar-medicamento', () => {
+            // Limpiar estados de invalidación anteriores
+            $('#buscar_medicamento').removeClass('is-invalid');
+            $('#TIPO_TECNOLOGIA').removeClass('is-invalid');
+
+            // Capturar contexto clínico global
+            const idPaciente = document.getElementById('global_id_pcnte')?.value || this.currentPatientId;
+            const consecutivoPaciente = document.getElementById('global_cnsctvo_pcnte')?.value || '1';
+
+            if (!idPaciente || !consecutivoPaciente) {
+                console.error("Error: No se detectó el contexto del paciente o de la atención actual");
+                this.ui.showToast('No se puede agregar el medicamento: Falta el contexto de paciente/atención.', 'danger');
+                return;
+            }
+
+            const hasIumCodes = $('#CODIGO_MEDICAMENTO').val() && $('#DESCRIPCION_MEDICAMENTO').val();
+            const hasTech = $('#TIPO_TECNOLOGIA').val();
+
+            let isValid = true;
+            if (!hasIumCodes) {
+                $('#buscar_medicamento').addClass('is-invalid');
+                this.ui.showToast('Debe buscar y seleccionar un medicamento válido desde el buscador (IUM).', 'warning');
+                isValid = false;
+            }
+            if (!hasTech) {
+                $('#TIPO_TECNOLOGIA').addClass('is-invalid');
+                this.ui.showToast('Debe seleccionar el Tipo de Tecnología de Salud.', 'warning');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            const descMed = $('#DESCRIPCION_MEDICAMENTO').val().trim();
+            const descDci = $('#DESCRIPCION_DCI').val().trim();
+            const carritoFormulas = this.formHandler.medicationsCart;
+
+            const medObj = {
+                codigo_medicamento: $('#CODIGO_MEDICAMENTO').val() || 'GENERIC',
+                descripcion_medicamento: descMed,
+                codigo_dci: $('#CODIGO_DCI').val() || 'GENERIC',
+                descripcion_dci: descDci,
+                dosis: parseFloat($('#DOSIS').val()) || 0,
+                um_dosis: $('#UM_DOSIS').val(),
+                um_dosis_descripcion: $('#UM_DOSIS option:selected').text(),
+                frecuencia: parseInt($('#formula_frecuencia').val(), 10) || 0,
+                um_frecuencia: $('#UM_FRECUENCIA').val(),
+                um_frecuencia_descripcion: $('#UM_FRECUENCIA option:selected').text(),
+                codigo_via: $('#CODIGO_VIA').val(),
+                via: $('#CODIGO_VIA option:selected').text(),
+                duracion: parseInt($('#formula_duracion').val(), 10) || 0,
+                um_duracion: $('#UM_DURACION').val(),
+                um_duracion_descripcion: $('#UM_DURACION option:selected').text(),
+                posologia: $('#formula_posologia').val().trim(),
+                tipo_tecnologia: $('#TIPO_TECNOLOGIA').val(),
+                tipo_tecnologia_descripcion: $('#TIPO_TECNOLOGIA option:selected').text(),
+                // Contexto clínico global (llaves exigidas en mayúsculas y minúsculas para compatibilidad)
+                ID_PCNTE: idPaciente,
+                CNSCTVO_PCNTE: parseInt(consecutivoPaciente, 10),
+                id_pcnte: idPaciente,
+                cnsctvo_pcnte: parseInt(consecutivoPaciente, 10),
+                formula: $('#formula_formula').val() || '',
+                cnsctvo_formula: carritoFormulas.length + 1,
+                id_mdco: $('#formula_id_mdco').val() || ''
+            };
+
+            carritoFormulas.push(medObj);
+            updateCartUI();
+
+            // Clear inputs
+            $('#buscar_medicamento').val('');
+            $('#CODIGO_MEDICAMENTO').val('');
+            $('#DESCRIPCION_MEDICAMENTO').val('');
+            $('#CODIGO_DCI').val('');
+            $('#DESCRIPCION_DCI').val('');
+            $('#DOSIS').val('');
+            $('#formula_frecuencia').val('');
+            $('#formula_duracion').val('');
+            $('#formula_posologia').val('');
+            $('#TIPO_TECNOLOGIA').val('');
+            
+            // Return focus to buscador IUM
+            $('#buscar_medicamento').focus();
+            this.ui.showToast('Medicamento agregado al carrito.', 'success');
+        });
+
+        $(document).on('click', '#btn-agregar-procedimiento', () => {
+            const desc = $('#procedimiento_descripcion').val().trim();
+            if (!desc) {
+                this.ui.showToast('Ingrese la descripción del procedimiento.', 'warning');
+                return;
+            }
+            const procObj = {
+                descripcion: desc,
+                codigo: $('#procedimiento_codigo').val().trim() || 'GENERIC',
+                indicacion: $('#procedimiento_indicacion').val().trim(),
+                prioridad: $('#procedimiento_prioridad').val()
+            };
+
+            this.formHandler.proceduresCart.push(procObj);
+            updateCartUI();
+
+            // Clear inputs
+            $('#procedimiento_descripcion').val('');
+            $('#procedimiento_codigo').val('');
+            $('#procedimiento_indicacion').val('');
+            this.ui.showToast('Procedimiento agregado al carrito.', 'success');
+        });
+
+        $(document).on('click', '#btn-agregar-incapacidad', () => {
+            const inicio = $('#incapacidad_inicio').val();
+            const fin = $('#incapacidad_fin').val();
+            if (!inicio || !fin) {
+                this.ui.showToast('Seleccione fecha de inicio y fin.', 'warning');
+                return;
+            }
+            const dias = $('#incapacidad_dias').val() || 1;
+            const incapObj = {
+                inicio: inicio,
+                fin: fin,
+                dias: dias,
+                contingencia: $('#incapacidad_contingencia').val(),
+                motivo: $('#incapacidad_motivo').val().trim()
+            };
+
+            this.formHandler.incapacitiesCart.push(incapObj);
+            updateCartUI();
+
+            // Clear inputs
+            $('#incapacidad_inicio').val('');
+            $('#incapacidad_fin').val('');
+            $('#incapacidad_dias').val('');
+            $('#incapacidad_motivo').val('');
+            this.ui.showToast('Incapacidad agregada al carrito.', 'success');
+        });
+
+        // Eliminar del carrito
+        $(document).on('click', '.btn-delete-cart-med', function(e) {
+            const idx = $(e.currentTarget).data('idx');
+            this.formHandler.medicationsCart.splice(idx, 1);
+            updateCartUI();
+        }.bind(this));
+
+        $(document).on('click', '.btn-delete-cart-proc', function(e) {
+            const idx = $(e.currentTarget).data('idx');
+            this.formHandler.proceduresCart.splice(idx, 1);
+            updateCartUI();
+        }.bind(this));
+
+        $(document).on('click', '.btn-delete-cart-incap', function(e) {
+            const idx = $(e.currentTarget).data('idx');
+            this.formHandler.incapacitiesCart.splice(idx, 1);
+            updateCartUI();
+        }.bind(this));
+
+        // Editar del carrito (rellena los inputs para edición)
+        $(document).on('click', '.btn-edit-cart-med', function(e) {
+            const idx = $(e.currentTarget).data('idx');
+            const med = this.formHandler.medicationsCart[idx];
+            
+            const displayTitle = med.descripcion_dci && med.descripcion_medicamento 
+                ? `${med.descripcion_dci} (${med.descripcion_medicamento})` 
+                : (med.descripcion_dci || med.descripcion_medicamento || '');
+                
+            $('#buscar_medicamento').val(displayTitle);
+            $('#CODIGO_MEDICAMENTO').val(med.codigo_medicamento);
+            $('#DESCRIPCION_MEDICAMENTO').val(med.descripcion_medicamento);
+            $('#CODIGO_DCI').val(med.codigo_dci);
+            $('#DESCRIPCION_DCI').val(med.descripcion_dci);
+            $('#DOSIS').val(med.dosis);
+            $('#UM_DOSIS').val(med.um_dosis);
+            $('#formula_frecuencia').val(med.frecuencia);
+            $('#UM_FRECUENCIA').val(med.um_frecuencia);
+            $('#CODIGO_VIA').val(med.codigo_via);
+            $('#formula_duracion').val(med.duracion);
+            $('#UM_DURACION').val(med.um_duracion);
+            $('#formula_posologia').val(med.posologia);
+            $('#TIPO_TECNOLOGIA').val(med.tipo_tecnologia || '');
+            // Hidden metadata fields
+            $('#formula_id_pcnte').val(med.id_pcnte);
+            $('#formula_cnsctvo_pcnte').val(med.cnsctvo_pcnte);
+            $('#formula_formula').val(med.formula);
+            $('#formula_cnsctvo_formula').val(med.cnsctvo_formula);
+            $('#formula_id_mdco').val(med.id_mdco);
+            
+            this.formHandler.medicationsCart.splice(idx, 1);
+            updateCartUI();
+            this.ui.showToast('Cargado en formulario para edición.', 'info');
+        }.bind(this));
+
+        $(document).on('click', '.btn-edit-cart-proc', function(e) {
+            const idx = $(e.currentTarget).data('idx');
+            const proc = this.formHandler.proceduresCart[idx];
+            $('#procedimiento_descripcion').val(proc.descripcion);
+            $('#procedimiento_codigo').val(proc.codigo);
+            $('#procedimiento_indicacion').val(proc.indicacion);
+            $('#procedimiento_prioridad').val(proc.prioridad);
+            this.formHandler.proceduresCart.splice(idx, 1);
+            updateCartUI();
+            this.ui.showToast('Cargado en formulario para edición.', 'info');
+        }.bind(this));
+
+        $(document).on('click', '.btn-edit-cart-incap', function(e) {
+            const idx = $(e.currentTarget).data('idx');
+            const incap = this.formHandler.incapacitiesCart[idx];
+            $('#incapacidad_inicio').val(incap.inicio);
+            $('#incapacidad_fin').val(incap.fin);
+            $('#incapacidad_dias').val(incap.dias);
+            $('#incapacidad_contingencia').val(incap.contingencia);
+            $('#incapacidad_motivo').val(incap.motivo);
+            this.formHandler.incapacitiesCart.splice(idx, 1);
+            updateCartUI();
+            this.ui.showToast('Cargado en formulario para edición.', 'info');
+        }.bind(this));
+
+        // Calcular días de incapacidad automáticamente
+        $(document).on('change', '#incapacidad_inicio, #incapacidad_fin', () => {
+            const inicioVal = $('#incapacidad_inicio').val();
+            const finVal = $('#incapacidad_fin').val();
+            if (inicioVal && finVal) {
+                const date1 = new Date(inicioVal);
+                const date2 = new Date(finVal);
+                const diffTime = Math.abs(date2 - date1);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                $('#incapacidad_dias').val(diffDays);
+            }
+        });
+
+        // Emitir Órdenes y Firmar Plan (Acción transaccional del módulo)
+        $(document).on('click', '#btn-emitir-ordenes', async (e) => {
+            e.preventDefault();
+            
+            const carritoFormulas = this.formHandler.medicationsCart;
+            if (carritoFormulas.length === 0) {
+                this.ui.showToast('El plan no contiene fórmulas médicas para emitir.', 'warning');
+                return;
+            }
+
+            // Mapear los datos de pacientes de forma dinámica si no vienen en la metadata oculta del carrito
+            const id_pcnte = document.getElementById('global_id_pcnte')?.value || this.currentPatientId || ''; 
+            const cnsctvo_pcnte = document.getElementById('global_cnsctvo_pcnte')?.value || '1';
+
+            carritoFormulas.forEach(med => {
+                if (!med.ID_PCNTE) med.ID_PCNTE = id_pcnte;
+                if (!med.CNSCTVO_PCNTE) med.CNSCTVO_PCNTE = parseInt(cnsctvo_pcnte, 10);
+                if (!med.id_pcnte) med.id_pcnte = id_pcnte;
+                if (!med.cnsctvo_pcnte) med.cnsctvo_pcnte = parseInt(cnsctvo_pcnte, 10);
+            });
+
+            try {
+                const token = this.api.storage.getToken();
+                const url = `${this.api.baseUrl}/createFormulacionHC.php`;
+                
+                const payloadToSend = { formulas: carritoFormulas };
+                console.log('PROCESANDO TRANSACCIÓN - PAYLOAD JSON ENVIADO A FORMULACION_HC:', JSON.stringify(payloadToSend, null, 2));
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payloadToSend)
+                });
+
+                const result = await response.json();
+                console.log('RESPUESTA DETALLADA DEL BACKEND:', JSON.stringify(result, null, 2));
+
+                if (response.ok && (result.status === 'success' || result.status === 'created')) {
+                    this.ui.showToast('Plan de Fórmulas Médicas emitido y firmado exitosamente.', 'success');
+                    
+                    // Vaciar estado local y UI
+                    this.formHandler.medicationsCart = [];
+                    updateCartUI();
+                    
+                    // Proceder a enviar el formulario general para consolidar la evolución diaria
+                    $('#form-evolucion-diaria').submit();
+                } else {
+                    console.error('Error del servidor al registrar formulaciones (Detalle del rechazo):', result);
+                    this.ui.showToast(result.message || 'Error al emitir el plan de fórmulas.', 'danger');
+                }
+            } catch (err) {
+                console.error('Error de red/petición al emitir y firmar plan:', err);
+                this.ui.showToast('Error de red al conectar con el servidor.', 'danger');
             }
         });
 
