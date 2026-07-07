@@ -2004,19 +2004,28 @@ class FormHandler {
                     await this.api.request('createFormulacion.php', 'POST', formPayload).catch(err => console.error("Error creating Formulacion:", err));
                 }
 
-                // 3. Save new Procedure order (ServiceRequest) to PRCDMNTOS_RSLTDOS table
-                const procDesc = $('#procedimiento_descripcion').val() ? $('#procedimiento_descripcion').val().trim() : '';
-                if (procDesc) {
-                    const procPayload = {
-                        id_pcnte: pacienteId,
-                        cnsctvo_pcnte: cnsctvo,
-                        cdgo_prcdmnto: $('#procedimiento_codigo').val() ? $('#procedimiento_codigo').val().trim() : 'GENERIC',
-                        dscrpcion_prcdmnto: procDesc,
-                        cdgo_indcion: $('#procedimiento_indicacion').val() ? $('#procedimiento_indicacion').val().trim() : null,
-                        id_mdco: user ? user.id : null,
-                        usuario_ingreso: user ? user.id : 'API'
+                // 3. Save all selected medical orders (ServiceRequest) to ORDENES_MEDICAS_HC table
+                if (this.ordersCart && this.ordersCart.length > 0) {
+                    const ordersPayload = {
+                        ordenes: this.ordersCart.map(order => ({
+                            id_pcnte: pacienteId,
+                            cnsctvo_pcnte: cnsctvo,
+                            categoria_fhir: order.categoria_fhir,
+                            tipo_tecnologia: order.tipo_tecnologia,
+                            tipo_tecnologia_descripcion: order.tipo_tecnologia_descripcion,
+                            tipo_examen: order.tipo_examen,
+                            codigo: order.codigo,
+                            nombre: order.nombre,
+                            cantidad: order.cantidad,
+                            observaciones: order.observaciones,
+                            id_mdco: user ? user.id : null,
+                            usuario_ingreso: user ? user.id : 'API',
+                            id_encuentro: cnsctvo,
+                            estado: 'active'
+                        }))
                     };
-                    await this.api.request('createProcedimientoResultado.php', 'POST', procPayload).catch(err => console.error("Error creating ProcedimientoResultado:", err));
+                    await this.api.request('createOrdenesMedicasHC.php', 'POST', ordersPayload)
+                        .catch(err => console.error("Error creating OrdenesMedicasHC:", err));
                 }
 
                 // 4. Save new Incapacidad (DocumentReference) to RMSION_INCPCDAD table
@@ -2114,6 +2123,8 @@ class FormHandler {
                 
                 // Limpiar borrador de localStorage
                 localStorage.removeItem(`draft_patient_${pacienteId}`);
+                this.ordersCart = [];
+                updateCartUI();
                 
                 // Limpiar formulario y resetear pestañas a la primera
                 $('#form-evolucion-diaria')[0].reset();
@@ -2183,6 +2194,33 @@ const CIE10_DICTIONARY = [
     { code: 'G47', desc: 'Trastornos del sueño (Insomnio)' },
     { code: 'Z00.0', desc: 'Examen médico general' },
     { code: 'Z01.2', desc: 'Examen odontológico' }
+];
+
+const CLINICAL_ORDERS_DICTIONARY = [
+    // Consultas (CON)
+    { code: '890201', desc: 'Consulta de primera vez por medicina general', category: 'procedure', sub: 'CON' },
+    { code: '890301', desc: 'Consulta de control de seguimiento por medicina general', category: 'procedure', sub: 'CON' },
+    { code: '890203', desc: 'Consulta de primera vez por medicina especializada', category: 'procedure', sub: 'CON' },
+    // Procedimientos (PRC)
+    { code: '895001', desc: 'Electrocardiograma de ritmo (ECG)', category: 'procedure', sub: 'PRC' },
+    { code: '895100', desc: 'Electrocardiograma de doce derivaciones', category: 'procedure', sub: 'PRC' },
+    { code: '894102', desc: 'Prueba ergométrica cardiopulmonar (Prueba de esfuerzo)', category: 'procedure', sub: 'PRC' },
+    // Imágenes (IMG)
+    { code: '871010', desc: 'Radiografía de tórax (Catarata, proyecciones P.A. y lateral)', category: 'procedure', sub: 'IMG' },
+    { code: '881201', desc: 'Ecografía de abdomen total', category: 'procedure', sub: 'IMG' },
+    { code: '873111', desc: 'Tomografía computarizada de cráneo (TAC cráneo)', category: 'procedure', sub: 'IMG' },
+    // Laboratorios (LAB)
+    { code: '902204', desc: 'Hemograma completo (Hemoglobina, hematocrito, plaquetas, leucocitos)', category: 'procedure', sub: 'LAB' },
+    { code: '903825', desc: 'Creatinina en suero u orina', category: 'procedure', sub: 'LAB' },
+    { code: '903841', desc: 'Glucosa en suero u otro fluido (Glicemia)', category: 'procedure', sub: 'LAB' },
+    { code: '903866', desc: 'Colesterol total', category: 'procedure', sub: 'LAB' },
+    { code: '903867', desc: 'Colesterol HDL', category: 'procedure', sub: 'LAB' },
+    { code: '903868', desc: 'Colesterol LDL', category: 'procedure', sub: 'LAB' },
+    // Otras Tecnologías / Insumos (TEC)
+    { code: 'INS-001', desc: 'Cánula de Oxígeno Nasal', category: 'technology', sub: 'TEC', tech: 'MED', techDesc: 'Dispositivo Médico' },
+    { code: 'INS-016', desc: 'Sonda Foley 16 Fr', category: 'technology', sub: 'TEC', tech: 'INS', techDesc: 'Insumo Clínico' },
+    { code: 'INS-003', desc: 'Guantes de nitrilo estériles', category: 'technology', sub: 'TEC', tech: 'INS', techDesc: 'Insumo Clínico' },
+    { code: 'INS-008', desc: 'Jeringa 10 cc con aguja', category: 'technology', sub: 'TEC', tech: 'INS', techDesc: 'Insumo Clínico' }
 ];
 
 class App {
@@ -2327,8 +2365,9 @@ class App {
         });
 
         // State for Clinical Cart
+        // State for Clinical Cart
         this.formHandler.medicationsCart = [];
-        this.formHandler.proceduresCart = [];
+        this.formHandler.ordersCart = [];
         this.formHandler.incapacitiesCart = [];
 
         const updateCartUI = () => {
@@ -2367,27 +2406,32 @@ class App {
                 });
             }
 
-            // Update procedures
-            const procList = $('#cart-procedures-list');
-            procList.empty();
-            if (this.formHandler.proceduresCart.length === 0) {
-                procList.append('<li class="list-group-item text-muted text-center py-2.5 fs-9 italic" id="empty-procs-placeholder">No hay procedimientos agregados.</li>');
+            // Update orders
+            const orderList = $('#cart-orders-list');
+            orderList.empty();
+            if (this.formHandler.ordersCart.length === 0) {
+                orderList.append('<li class="list-group-item text-muted text-center py-2.5 fs-9 italic" id="empty-orders-placeholder">No hay órdenes médicas agregadas.</li>');
             } else {
-                this.formHandler.proceduresCart.forEach((proc, idx) => {
-                    procList.append(`
+                this.formHandler.ordersCart.forEach((order, idx) => {
+                    const badgeClass = order.categoria_fhir === 'procedure' ? 'bg-info' : 'bg-warning';
+                    const badgeText = order.categoria_fhir === 'procedure' ? 'Procedimiento' : 'Tecnología';
+                    orderList.append(`
                         <li class="list-group-item d-flex justify-content-between align-items-center py-2 fs-8.5">
                             <div>
-                                <strong>${proc.descripcion}</strong> <span class="badge bg-secondary-subtle text-secondary fs-9.5">${proc.codigo}</span>
-                                <div class="text-secondary" style="font-size: 0.75rem;">Prioridad: ${proc.prioridad} | Justificación: ${proc.indicacion}</div>
+                                <span class="badge ${badgeClass} text-white fs-9.5 me-1">${badgeText}</span>
+                                <strong>${order.nombre}</strong> <span class="badge bg-secondary-subtle text-secondary fs-9.5">${order.codigo}</span>
+                                <div class="text-secondary" style="font-size: 0.75rem;">Cant: ${order.cantidad} | Obs: ${order.observaciones || ''}</div>
                             </div>
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none btn-edit-cart-proc" data-idx="${idx}">✏️</button>
-                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-danger btn-delete-cart-proc" data-idx="${idx}">X</button>
+                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none btn-edit-cart-order" data-idx="${idx}">✏️</button>
+                                <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none text-danger btn-delete-cart-order" data-idx="${idx}">X</button>
                             </div>
                         </li>
                     `);
                 });
             }
+
+
 
             // Update incapacidades
             const incapList = $('#cart-incapacity-list');
@@ -2412,21 +2456,367 @@ class App {
             }
 
             // Update counter
-            const totalCount = this.formHandler.medicationsCart.length + this.formHandler.proceduresCart.length + this.formHandler.incapacitiesCart.length;
+            const totalCount = this.formHandler.medicationsCart.length + this.formHandler.ordersCart.length + this.formHandler.incapacitiesCart.length;
             $('#cart-counter').text(totalCount);
         };
 
-        // Copiar Justificación desde Notas
-        $(document).on('click', '#btn-copiar-justificacion', (e) => {
+        // Reactividad de categoría y plantilla de órdenes médicas
+        $(document).on('click', '#orden_filtros_pills button', function(e) {
             e.preventDefault();
-            const notas = $('#evo_plan').val().trim();
-            if (notas) {
-                $('#procedimiento_indicacion').val(notas);
-                this.ui.showToast('Justificación copiada desde Conducta y Plan.', 'info');
+            $('#orden_filtros_pills button').removeClass('btn-primary active').addClass('btn-outline-primary');
+            $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+            
+            // Limpiar selección actual si cambia el filtro
+            $('#orden_codigo_val').val('');
+            $('#orden_nombre_val').val('');
+            $('#orden_categoria_fhir_val').val('');
+            $('#orden_tipo_tecnologia_val').val('');
+            $('#orden_tipo_tecnologia_descripcion_val').val('');
+            $('#orden_tipo_examen_val').val('');
+            
+            $('#orden_buscar').trigger('input');
+        });
+
+        // Autocomplete de órdenes clínicas
+        let activeSuggestionIndex = -1;
+        let autocompleteTimer;
+        $(document).on('input', '#orden_buscar', function() {
+            clearTimeout(autocompleteTimer);
+            const query = $('#orden_buscar').val().trim();
+            const $dropdown = $('#orden_autocomplete_dropdown');
+            activeSuggestionIndex = -1;
+            
+            if (query.length === 0) {
+                $dropdown.removeClass('show').empty();
+                resetOrdersForm();
+                return;
+            }
+
+            const codePattern = /^[0-9]{6}$|^[A-Z]{2,6}-[A-Z0-9]{2,6}$/i;
+            if (codePattern.test(query)) {
+                clearTimeout(autocompleteTimer);
+                $dropdown.removeClass('show').empty();
+                
+                this.api.request(`getTecnologiasSalud.php?codigo=${encodeURIComponent(query)}`, 'GET')
+                    .then(res => {
+                        if (res && res.status === 'success' && res.data) {
+                            selectOrderSuggestion(res.data);
+                            this.ui.showToast('Código verificado y cargado.', 'success');
+                        }
+                    })
+                    .catch(err => {
+                        console.warn("Exact code lookup failed:", err);
+                    });
+                return;
+            }
+
+            if (query.length < 2) {
+                return;
+            }
+
+            const activeFilter = $('#orden_filtros_pills button.active').data('filter');
+            let grupoParam = 'TODOS';
+            if (activeFilter === 'CON') grupoParam = 'CONSULTA';
+            else if (activeFilter === 'PRC') grupoParam = 'PROCEDIMIENTO';
+            else if (activeFilter === 'IMG') grupoParam = 'IMAGEN';
+            else if (activeFilter === 'LAB') grupoParam = 'LABORATORIO';
+            else if (activeFilter === 'TEC') grupoParam = 'TECNOLOGIA';
+
+            let url = `getTecnologiasSalud.php?q=${encodeURIComponent(query)}&grupo=${encodeURIComponent(grupoParam)}`;
+
+            autocompleteTimer = setTimeout(() => {
+                this.api.request(url, 'GET')
+                    .then(res => {
+                        $dropdown.empty();
+                        if (res && res.status === 'success' && res.data && res.data.length > 0) {
+                            res.data.forEach((item, index) => {
+                                let badgeHtml = '';
+                                if (item.grupo_filtro === 'LABORATORIO') {
+                                    badgeHtml = '<span class="badge text-white font-monospace ms-1.5" style="background-color: #6f42c1;">LAB</span>';
+                                } else if (item.grupo_filtro === 'IMAGEN') {
+                                    badgeHtml = '<span class="badge bg-secondary text-white font-monospace ms-1.5">IMG</span>';
+                                } else if (item.grupo_filtro === 'TECNOLOGIA') {
+                                    badgeHtml = '<span class="badge bg-warning text-dark font-monospace ms-1.5">TEC</span>';
+                                } else if (item.grupo_filtro === 'CONSULTA') {
+                                    badgeHtml = '<span class="badge bg-info text-dark font-monospace ms-1.5">CON</span>';
+                                } else if (item.grupo_filtro === 'PROCEDIMIENTO') {
+                                    badgeHtml = '<span class="badge bg-info text-dark font-monospace ms-1.5">PRC</span>';
+                                }
+
+                                const text = item.nombre;
+                                const lowerText = text.toLowerCase();
+                                const lowerQuery = query.toLowerCase();
+                                let displayNameHtml = text;
+                                const matchIdx = lowerText.indexOf(lowerQuery);
+                                if (matchIdx !== -1) {
+                                    const matchLength = query.length;
+                                    const before = text.substring(0, matchIdx);
+                                    const match = text.substring(matchIdx, matchIdx + matchLength);
+                                    const after = text.substring(matchIdx + matchLength);
+                                    displayNameHtml = `${before}<strong>${match}</strong>${after}`;
+                                }
+
+                                const li = $(`
+                                    <li class="suggestion-item" data-index="${index}">
+                                        <a class="dropdown-item py-1.5 px-3 d-flex justify-content-between align-items-center" href="#" style="white-space: normal; font-size: 0.8rem;">
+                                            <div>
+                                                <span class="badge bg-light text-secondary me-1.5 font-monospace">${item.codigo}</span>
+                                                <span>${displayNameHtml}</span>
+                                            </div>
+                                            ${badgeHtml}
+                                        </a>
+                                    </li>
+                                `);
+
+                                li.find('a').on('click', function(evt) {
+                                    evt.preventDefault();
+                                    selectOrderSuggestion(item);
+                                });
+
+                                li.data('item', item);
+                                $dropdown.append(li);
+                            });
+                            $dropdown.addClass('show');
+                        } else {
+                            $dropdown.removeClass('show');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error fetching terminologies:', err);
+                        $dropdown.removeClass('show').empty();
+                    });
+            }, 250);
+        }.bind(this));
+
+        const selectOrderSuggestion = (item) => {
+            $('#orden_cantidad').removeClass('is-invalid');
+            $('#orden_frecuencia').removeClass('is-invalid');
+
+            $('#orden_buscar').val(`[${item.codigo}] ${item.nombre}`);
+            $('#orden_codigo_val').val(item.codigo);
+            $('#orden_nombre_val').val(item.nombre);
+            $('#orden_categoria_fhir_val').val(item.categoria_fhir || 'procedure');
+            $('#orden_tipo_tecnologia_val').val(item.tipo_tecnologia || '');
+            $('#orden_tipo_tecnologia_descripcion_val').val(item.categoria_fhir === 'technology' ? 'Tecnología Salud' : '');
+            if (item.tipo_tecnologia) {
+                this.api.request(`getEstados.php?status=TipoTecnologiaSalud`, 'GET')
+                    .then(res => {
+                        if (res && res.status === 'success' && res.data) {
+                            const found = res.data.find(x => String(x.code) === String(item.tipo_tecnologia));
+                            if (found) {
+                                $('#orden_tipo_tecnologia_descripcion_val').val(found.display);
+                            }
+                        }
+                    })
+                    .catch(err => console.error("Error fetching TipoTecnologiaSalud description:", err));
+            }
+            $('#orden_tipo_examen_val').val(item.grupo_filtro || '');
+
+            // 1. Ayudas para cantidad
+            const $qty = $('#orden_cantidad');
+            const $qtyHelp = $('#orden_cantidad_help');
+            if (item.requiere_cantidad === false || item.requiere_cantidad === 0) {
+                $qty.val(1).prop('readonly', true).prop('disabled', true).removeClass('border-primary');
+                $qtyHelp.text("Cantidad fija para procedimientos estándar").removeClass('d-none');
             } else {
-                this.ui.showToast('No hay texto en Conducta y Plan para copiar.', 'warning');
+                $qty.val('').prop('readonly', false).prop('disabled', false).prop('required', true).addClass('border-primary').attr('placeholder', 'Ej: 10');
+                $qtyHelp.text("Define el número de unidades requeridas para este insumo/tecnología").removeClass('d-none');
+                $qty.focus();
+            }
+
+            // 2. Ayudas para frecuencia
+            const $groupFreq = $('#group_orden_frecuencia');
+            const $wrapperObs = $('#wrapper_orden_observaciones');
+            if (item.requiere_frecuencia === true || item.requiere_frecuencia === 1) {
+                $groupFreq.removeClass('d-none');
+                $('#orden_frecuencia').prop('required', true);
+                $wrapperObs.removeClass('col-md-9').addClass('col-md-6');
+            } else {
+                $groupFreq.addClass('d-none');
+                $('#orden_frecuencia').val('').prop('required', false);
+                $wrapperObs.removeClass('col-md-6').addClass('col-md-9');
+            }
+
+            // 3. Placeholder de observaciones según la categoriaFhir
+            const $obs = $('#orden_observaciones');
+            if (item.categoria_fhir === 'procedure') {
+                $obs.attr('placeholder', 'Indicaciones clínicas adicionales para la realización del examen o interconsulta...');
+            } else if (item.categoria_fhir === 'technology') {
+                $obs.attr('placeholder', 'Especificaciones de entrega, uso o marcas aceptadas para la tecnología médica...');
+            } else {
+                $obs.attr('placeholder', 'Indicaciones específicas para el paciente...');
+            }
+
+            $('#orden_autocomplete_dropdown').removeClass('show').empty();
+        };
+
+        const resetOrdersForm = () => {
+            $('#orden_codigo_val').val('');
+            $('#orden_nombre_val').val('');
+            $('#orden_categoria_fhir_val').val('');
+            $('#orden_tipo_tecnologia_val').val('');
+            $('#orden_tipo_tecnologia_descripcion_val').val('');
+            $('#orden_tipo_examen_val').val('');
+
+            $('#orden_cantidad').val(1).prop('readonly', true).prop('disabled', true).removeClass('is-invalid border-primary').removeAttr('placeholder');
+            $('#orden_cantidad_help').text("Cantidad fija para procedimientos estándar");
+            
+            $('#group_orden_frecuencia').addClass('d-none');
+            $('#orden_frecuencia').val('').prop('required', false).removeClass('is-invalid');
+            $('#wrapper_orden_observaciones').removeClass('col-md-6').addClass('col-md-9');
+
+            $('#orden_observaciones').val('').attr('placeholder', 'Indicaciones específicas para el paciente...');
+        };
+
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#orden_buscar, #orden_autocomplete_dropdown').length) {
+                $('#orden_autocomplete_dropdown').removeClass('show');
             }
         });
+
+        $(document).on('keydown', '#orden_buscar', function(e) {
+            const $dropdown = $('#orden_autocomplete_dropdown');
+            const $items = $dropdown.find('li.suggestion-item');
+            
+            if ($dropdown.hasClass('show') && $items.length > 0) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    activeSuggestionIndex = (activeSuggestionIndex + 1) % $items.length;
+                    $items.removeClass('active-suggestion bg-light');
+                    const $activeItem = $items.eq(activeSuggestionIndex);
+                    $activeItem.addClass('active-suggestion bg-light');
+                    $activeItem[0].scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    activeSuggestionIndex = (activeSuggestionIndex - 1 + $items.length) % $items.length;
+                    $items.removeClass('active-suggestion bg-light');
+                    const $activeItem = $items.eq(activeSuggestionIndex);
+                    $activeItem.addClass('active-suggestion bg-light');
+                    $activeItem[0].scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (activeSuggestionIndex >= 0 && activeSuggestionIndex < $items.length) {
+                        const selectedItem = $items.eq(activeSuggestionIndex).data('item');
+                        selectOrderSuggestion(selectedItem);
+                    } else if ($items.length === 1) {
+                        $items.eq(0).find('a').trigger('click');
+                    } else if ($('#orden_codigo_val').val()) {
+                        $('#btn-agregar-orden').trigger('click');
+                    }
+                }
+            } else if (e.key === 'Enter' && $('#orden_codigo_val').val()) {
+                e.preventDefault();
+                $('#btn-agregar-orden').trigger('click');
+            }
+        });
+
+        $(document).on('keydown', '#orden_cantidad, #orden_frecuencia, #orden_observaciones', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                $('#btn-agregar-orden').trigger('click');
+            }
+        });
+
+        $(document).on('click', '#btn-agregar-orden', () => {
+            // Limpiar errores inline
+            $('#orden_cantidad').removeClass('is-invalid');
+            $('#orden_frecuencia').removeClass('is-invalid');
+
+            const code = $('#orden_codigo_val').val();
+            const name = $('#orden_nombre_val').val();
+            const cat = $('#orden_categoria_fhir_val').val();
+            const tech = $('#orden_tipo_tecnologia_val').val();
+            const techDesc = $('#orden_tipo_tecnologia_descripcion_val').val();
+            const exam = $('#orden_tipo_examen_val').val();
+            
+            const qty = $('#orden_cantidad').val();
+            const obs = $('#orden_observaciones').val().trim();
+            const freq = $('#orden_frecuencia').val().trim();
+
+            if (!code || !name) {
+                this.ui.showToast('Debe seleccionar una orden válida desde el buscador único inteligente.', 'warning');
+                return;
+            }
+
+            // Inline Validation para cantidad si la categoría es tecnología
+            if (cat === 'technology' && (!qty || parseInt(qty, 10) <= 0)) {
+                $('#orden_cantidad').addClass('is-invalid').focus();
+                return;
+            }
+
+            // Inline Validation para frecuencia si se requiere
+            if (!$('#group_orden_frecuencia').hasClass('d-none') && !freq) {
+                $('#orden_frecuencia').addClass('is-invalid').focus();
+                return;
+            }
+
+            // Añadir indicación de frecuencia en observaciones si existe
+            let fullObs = obs;
+            if (freq) {
+                fullObs = `Frecuencia: ${freq}. ${obs}`.trim();
+            }
+
+            const id_pcnte = document.getElementById('global_id_pcnte')?.value || this.currentPatientId || ''; 
+            const cnsctvo_pcnte = document.getElementById('global_cnsctvo_pcnte')?.value || '1';
+
+            const orderObj = {
+                categoria_fhir: cat,
+                codigo: code,
+                nombre: name,
+                cantidad: parseInt(qty, 10) || 1,
+                observaciones: fullObs,
+                tipo_tecnologia: tech || null,
+                tipo_tecnologia_descripcion: techDesc || null,
+                tipo_examen: exam || null,
+                id_pcnte: id_pcnte,
+                cnsctvo_pcnte: parseInt(cnsctvo_pcnte, 10),
+                ID_PCNTE: id_pcnte,
+                CNSCTVO_PCNTE: parseInt(cnsctvo_pcnte, 10)
+            };
+
+            this.formHandler.ordersCart.push(orderObj);
+            updateCartUI();
+
+            // Resetear formulario y dar foco al buscador
+            resetOrdersForm();
+            $('#orden_buscar').val('').focus();
+
+            this.ui.showToast('Orden médica agregada exitosamente.', 'success');
+        });
+
+        $(document).on('change', '#orden_plantilla_select', function() {
+            const template = $(this).val();
+            if (!template) return;
+
+            let code = null;
+            let prefillObs = '';
+            if (template === 'ecg') {
+                code = '895001';
+                prefillObs = 'Realizar electrocardiograma de ritmo en reposo.';
+            } else if (template === 'hemograma') {
+                code = '902204';
+                prefillObs = 'Toma de muestra en ayunas.';
+            } else if (template === 'oxigeno') {
+                code = 'INS-001';
+                prefillObs = 'Insumo para oxigenoterapia domiciliaria.';
+            } else if (template === 'foley') {
+                code = 'INS-016';
+                prefillObs = 'Para cateterismo vesical permanente.';
+            }
+
+            if (code) {
+                this.api.request(`getTecnologiasSalud.php?codigo=${code}`, 'GET')
+                    .then(res => {
+                        if (res && res.status === 'success' && res.data) {
+                            selectOrderSuggestion(res.data);
+                            $('#orden_observaciones').val(prefillObs);
+                        } else {
+                            console.warn("Template order not found in database technologies: " + code);
+                        }
+                    })
+                    .catch(err => console.error("Error loading template code metadata:", err));
+            }
+        }.bind(this));
 
         // Autocomplete asíncrono para buscar_medicamento con la tabla IUM
         let debounceTimer;
@@ -2580,28 +2970,7 @@ class App {
             this.ui.showToast('Medicamento agregado al carrito.', 'success');
         });
 
-        $(document).on('click', '#btn-agregar-procedimiento', () => {
-            const desc = $('#procedimiento_descripcion').val().trim();
-            if (!desc) {
-                this.ui.showToast('Ingrese la descripción del procedimiento.', 'warning');
-                return;
-            }
-            const procObj = {
-                descripcion: desc,
-                codigo: $('#procedimiento_codigo').val().trim() || 'GENERIC',
-                indicacion: $('#procedimiento_indicacion').val().trim(),
-                prioridad: $('#procedimiento_prioridad').val()
-            };
 
-            this.formHandler.proceduresCart.push(procObj);
-            updateCartUI();
-
-            // Clear inputs
-            $('#procedimiento_descripcion').val('');
-            $('#procedimiento_codigo').val('');
-            $('#procedimiento_indicacion').val('');
-            this.ui.showToast('Procedimiento agregado al carrito.', 'success');
-        });
 
         $(document).on('click', '#btn-agregar-incapacidad', () => {
             const inicio = $('#incapacidad_inicio').val();
@@ -2637,10 +3006,11 @@ class App {
             updateCartUI();
         }.bind(this));
 
-        $(document).on('click', '.btn-delete-cart-proc', function(e) {
+        $(document).on('click', '.btn-delete-cart-order', function(e) {
             const idx = $(e.currentTarget).data('idx');
-            this.formHandler.proceduresCart.splice(idx, 1);
+            this.formHandler.ordersCart.splice(idx, 1);
             updateCartUI();
+            this.ui.showToast('Orden eliminada.', 'info');
         }.bind(this));
 
         $(document).on('click', '.btn-delete-cart-incap', function(e) {
@@ -2684,16 +3054,22 @@ class App {
             this.ui.showToast('Cargado en formulario para edición.', 'info');
         }.bind(this));
 
-        $(document).on('click', '.btn-edit-cart-proc', function(e) {
+        $(document).on('click', '.btn-edit-cart-order', function(e) {
             const idx = $(e.currentTarget).data('idx');
-            const proc = this.formHandler.proceduresCart[idx];
-            $('#procedimiento_descripcion').val(proc.descripcion);
-            $('#procedimiento_codigo').val(proc.codigo);
-            $('#procedimiento_indicacion').val(proc.indicacion);
-            $('#procedimiento_prioridad').val(proc.prioridad);
-            this.formHandler.proceduresCart.splice(idx, 1);
+            const order = this.formHandler.ordersCart[idx];
+            
+            $('#orden_categoria_fhir').val(order.categoria_fhir).trigger('change');
+            $('#orden_codigo').val(order.codigo);
+            $('#orden_nombre').val(order.nombre);
+            $('#orden_cantidad').val(order.cantidad);
+            $('#orden_observaciones').val(order.observaciones);
+            $('#orden_tipo_tecnologia').val(order.tipo_tecnologia || '');
+            $('#orden_tipo_tecnologia_descripcion').val(order.tipo_tecnologia_descripcion || '');
+            $('#orden_tipo_examen').val(order.tipo_examen || '');
+
+            this.formHandler.ordersCart.splice(idx, 1);
             updateCartUI();
-            this.ui.showToast('Cargado en formulario para edición.', 'info');
+            this.ui.showToast('Cargada en formulario para edición.', 'info');
         }.bind(this));
 
         $(document).on('click', '.btn-edit-cart-incap', function(e) {
@@ -2722,20 +3098,24 @@ class App {
             }
         });
 
-        // Emitir Órdenes y Firmar Plan (Acción transaccional del módulo)
         $(document).on('click', '#btn-emitir-ordenes', async (e) => {
             e.preventDefault();
             
-            const carritoFormulas = this.formHandler.medicationsCart;
-            if (carritoFormulas.length === 0) {
-                this.ui.showToast('El plan no contiene fórmulas médicas para emitir.', 'warning');
+            const carritoFormulas = this.formHandler.medicationsCart || [];
+            const carritoOrdenes = this.formHandler.ordersCart || [];
+            const carritoIncapacidades = this.formHandler.incapacitiesCart || [];
+
+            if (carritoFormulas.length === 0 && carritoOrdenes.length === 0 && carritoIncapacidades.length === 0) {
+                this.ui.showToast('El plan de manejo se encuentra vacío. Para firmar la consulta, debe registrar al menos una fórmula médica, una orden médica o una incapacidad.', 'warning');
                 return;
             }
 
             // Mapear los datos de pacientes de forma dinámica si no vienen en la metadata oculta del carrito
             const id_pcnte = document.getElementById('global_id_pcnte')?.value || this.currentPatientId || ''; 
             const cnsctvo_pcnte = document.getElementById('global_cnsctvo_pcnte')?.value || '1';
+            const id_encuentro = document.getElementById('global_id_encuentro')?.value || '';
 
+            // Estampar identificadores de contexto en todas las fórmulas
             carritoFormulas.forEach(med => {
                 if (!med.ID_PCNTE) med.ID_PCNTE = id_pcnte;
                 if (!med.CNSCTVO_PCNTE) med.CNSCTVO_PCNTE = parseInt(cnsctvo_pcnte, 10);
@@ -2743,11 +3123,30 @@ class App {
                 if (!med.cnsctvo_pcnte) med.cnsctvo_pcnte = parseInt(cnsctvo_pcnte, 10);
             });
 
+            // Estampar identificadores en todas las órdenes
+            carritoOrdenes.forEach(ord => {
+                if (!ord.id_pcnte) ord.id_pcnte = id_pcnte;
+                if (!ord.cnsctvo_pcnte) ord.cnsctvo_pcnte = parseInt(cnsctvo_pcnte, 10);
+                if (!ord.ID_PCNTE) ord.ID_PCNTE = id_pcnte;
+                if (!ord.CNSCTVO_PCNTE) ord.CNSCTVO_PCNTE = parseInt(cnsctvo_pcnte, 10);
+                if (!ord.id_encuentro) ord.id_encuentro = id_encuentro;
+            });
+
+            // Estampar identificadores en todas las incapacidades
+            carritoIncapacidades.forEach(inc => {
+                if (!inc.id_pcnte) inc.id_pcnte = id_pcnte;
+                if (!inc.cnsctvo_pcnte) inc.cnsctvo_pcnte = parseInt(cnsctvo_pcnte, 10);
+            });
+
             try {
                 const token = this.api.storage.getToken();
                 const url = `${this.api.baseUrl}/createFormulacionHC.php`;
                 
-                const payloadToSend = { formulas: carritoFormulas };
+                const payloadToSend = { 
+                    formulas: carritoFormulas,
+                    ordenesMedicas: carritoOrdenes,
+                    incapacidades: carritoIncapacidades
+                };
                 console.log('PROCESANDO TRANSACCIÓN - PAYLOAD JSON ENVIADO A FORMULACION_HC:', JSON.stringify(payloadToSend, null, 2));
                 
                 const response = await fetch(url, {
@@ -2763,17 +3162,19 @@ class App {
                 console.log('RESPUESTA DETALLADA DEL BACKEND:', JSON.stringify(result, null, 2));
 
                 if (response.ok && (result.status === 'success' || result.status === 'created')) {
-                    this.ui.showToast('Plan de Fórmulas Médicas emitido y firmado exitosamente.', 'success');
+                    this.ui.showToast('Plan de manejo (fórmulas, órdenes e incapacidades) emitido y firmado exitosamente.', 'success');
                     
-                    // Vaciar estado local y UI
+                    // Vaciar estados locales y UI
                     this.formHandler.medicationsCart = [];
+                    this.formHandler.ordersCart = [];
+                    this.formHandler.incapacitiesCart = [];
                     updateCartUI();
                     
                     // Proceder a enviar el formulario general para consolidar la evolución diaria
                     $('#form-evolucion-diaria').submit();
                 } else {
-                    console.error('Error del servidor al registrar formulaciones (Detalle del rechazo):', result);
-                    this.ui.showToast(result.message || 'Error al emitir el plan de fórmulas.', 'danger');
+                    console.error('Error del servidor al registrar plan (Detalle del rechazo):', result);
+                    this.ui.showToast(result.message || 'Error al emitir el plan de manejo.', 'danger');
                 }
             } catch (err) {
                 console.error('Error de red/petición al emitir y firmar plan:', err);
