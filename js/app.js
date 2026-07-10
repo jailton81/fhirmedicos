@@ -1015,9 +1015,10 @@ class FormHandler {
             const pViaStatus = this.api.request('getEstados.php?status=VAD', 'GET').catch(err => ({ error: true, data: [] }));
             const pDosisStatus = this.api.request('getEstados.php?status=UMM', 'GET').catch(err => ({ error: true, data: [] }));
             const pTechStatus = this.api.request('getEstados.php?status=TipoTecnologiaSalud', 'GET').catch(err => ({ error: true, data: [] }));
+            const pMipresStatus = this.api.request('getEstados.php?status=MipresInstruction', 'GET').catch(err => ({ error: true, data: [] }));
 
-            const [resStatus, resAllergyStatus, resVerif, resMedStatus, resHistoryStatus, resParentesco, resTipoAlergia, resFrecStatus, resViaStatus, resDosisStatus, resTechStatus] = await Promise.all([
-                pStatus, pAllergyStatus, pVerif, pMedStatus, pHistoryStatus, pParentesco, pTipoAlergia, pFrecStatus, pViaStatus, pDosisStatus, pTechStatus
+            const [resStatus, resAllergyStatus, resVerif, resMedStatus, resHistoryStatus, resParentesco, resTipoAlergia, resFrecStatus, resViaStatus, resDosisStatus, resTechStatus, resMipresStatus] = await Promise.all([
+                pStatus, pAllergyStatus, pVerif, pMedStatus, pHistoryStatus, pParentesco, pTipoAlergia, pFrecStatus, pViaStatus, pDosisStatus, pTechStatus, pMipresStatus
             ]);
 
             if (resParentesco && resParentesco.status === 'success' && resParentesco.data) {
@@ -1176,6 +1177,18 @@ class FormHandler {
                     selectTech.append(new Option(item.display, item.code));
                 });
             }
+
+            // Populate Instrucción MiPres (INSTRUCCION_MIPRES)
+            if (resMipresStatus && resMipresStatus.status === 'success' && resMipresStatus.data) {
+                const selectMipres = $('#INSTRUCCION_MIPRES');
+                selectMipres.empty();
+                selectMipres.append(new Option('Seleccione instrucción...', '', true, true));
+                selectMipres.children().first().attr('disabled', true);
+                resMipresStatus.data.forEach(item => {
+                    selectMipres.append(new Option(item.display, item.code));
+                });
+            }
+
         } catch (error) {
             console.error("Error al cargar estados y verificaciones:", error);
         }
@@ -1753,6 +1766,11 @@ class FormHandler {
         }
         $('#evo-form-tabs .clinical-step-tab-btn').removeClass('completed');
 
+        // Cargar dinámicamente las plantillas asociadas a este encuentro/módulo
+        if (window.portal && typeof window.portal.loadTemplates === 'function') {
+            window.portal.loadTemplates('all');
+        }
+
         try {
             // Load Patient demographics (gender, birthdate) and calculate age
             const pPatient = this.api.request(`getPatient.php?id=${pacienteId}`, 'GET').catch(err => ({ error: true, message: err.message }));
@@ -2254,6 +2272,29 @@ class App {
         this.evaluateRouting();
     }
 
+    loadTemplates(filterPill) {
+        let tipoParam = 'TODOS';
+        if (filterPill === 'CON') tipoParam = 'CONSULTA';
+        else if (filterPill === 'PRC') tipoParam = 'PROCEDIMIENTO';
+        else if (filterPill === 'IMG') tipoParam = 'IMAGEN';
+        else if (filterPill === 'LAB') tipoParam = 'LABORATORIO';
+        else if (filterPill === 'TEC') tipoParam = 'TECNOLOGIA';
+        
+        this.api.request(`getPlantillas.php?tipo=${encodeURIComponent(tipoParam)}`, 'GET')
+            .then(res => {
+                const $select = $('#orden_plantilla_select');
+                $select.empty().append('<option value="" selected>-- Seleccionar una plantilla --</option>');
+                if (res && res.status === 'success' && res.data) {
+                    res.data.forEach(p => {
+                        $select.append(`<option value="${p.codigo_plantilla}">${p.descripcion} (${p.tipo_plantilla})</option>`);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error("Error loading templates:", err);
+            });
+    }
+
     bindEvents() {
         // Enlazar submits de los formularios
         $('#form-login').on('submit', (e) => this.formHandler.login(e));
@@ -2369,6 +2410,10 @@ class App {
         this.formHandler.medicationsCart = [];
         this.formHandler.ordersCart = [];
         this.formHandler.incapacitiesCart = [];
+        this.editingOrderIndex = null;
+        this.editingOrderBackup = null;
+        this.editingMedIndex = null;
+        this.editingMedBackup = null;
 
         const updateCartUI = () => {
             // Update medications
@@ -2460,11 +2505,77 @@ class App {
             $('#cart-counter').text(totalCount);
         };
 
+
+
+        // Manejador para la selección de plantillas
+        $(document).on('change', '#orden_plantilla_select', (e) => {
+            const cdgo = $(e.target).val();
+            if (!cdgo) return;
+            
+            const id_pcnte = document.getElementById('global_id_pcnte')?.value || this.currentPatientId || ''; 
+            const cnsctvo_pcnte = document.getElementById('global_cnsctvo_pcnte')?.value || '1';
+            const id_encuentro = document.getElementById('global_id_encuentro')?.value || '';
+
+            this.api.request(`getTecnologiasPlantilla.php?cdgo_plntlla=${encodeURIComponent(cdgo)}`, 'GET')
+                .then(res => {
+                    if (res && res.status === 'success' && res.data && res.data.length > 0) {
+                        res.data.forEach(item => {
+                            const orderObj = {
+                                categoria_fhir: item.categoria_fhir || 'procedure',
+                                codigo: item.codigo,
+                                nombre: item.nombre,
+                                cantidad: 1,
+                                observaciones: item.observaciones || 'Cargado desde plantilla predefinida.',
+                                tipo_tecnologia: item.tipo_tecnologia || null,
+                                tipo_tecnologia_descripcion: item.tipo_tecnologia ? 'Cargando...' : null,
+                                tipo_examen: item.grupo_filtro || null,
+                                id_pcnte: id_pcnte,
+                                cnsctvo_pcnte: parseInt(cnsctvo_pcnte, 10),
+                                ID_PCNTE: id_pcnte,
+                                CNSCTVO_PCNTE: parseInt(cnsctvo_pcnte, 10),
+                                id_encuentro: id_encuentro
+                            };
+
+                            if (item.tipo_tecnologia) {
+                                this.api.request(`getEstados.php?status=TipoTecnologiaSalud`, 'GET')
+                                    .then(sRes => {
+                                        if (sRes && sRes.status === 'success' && sRes.data) {
+                                            const found = sRes.data.find(x => String(x.code) === String(item.tipo_tecnologia));
+                                            if (found) {
+                                                orderObj.tipo_tecnologia_descripcion = found.display;
+                                                updateCartUI();
+                                            }
+                                        }
+                                    }).catch(err => console.error(err));
+                            }
+                            
+                            const exists = this.formHandler.ordersCart.some(x => x.codigo === orderObj.codigo);
+                            if (!exists) {
+                                this.formHandler.ordersCart.push(orderObj);
+                            }
+                        });
+                        updateCartUI();
+                        this.ui.showToast(`Se cargaron ${res.data.length} órdenes desde la plantilla.`, 'success');
+                    } else {
+                        this.ui.showToast('La plantilla seleccionada no contiene tecnologías activas.', 'warning');
+                    }
+                    $(e.target).val('');
+                })
+                .catch(err => {
+                    console.error("Error loading template items:", err);
+                    this.ui.showToast('Error de red al cargar ítems de plantilla.', 'danger');
+                    $(e.target).val('');
+                });
+        });
+
         // Reactividad de categoría y plantilla de órdenes médicas
-        $(document).on('click', '#orden_filtros_pills button', function(e) {
+        $(document).on('click', '#orden_filtros_pills button', (e) => {
             e.preventDefault();
             $('#orden_filtros_pills button').removeClass('btn-primary active').addClass('btn-outline-primary');
-            $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+            $(e.currentTarget).removeClass('btn-outline-primary').addClass('btn-primary active');
+            
+            const activeFilter = $(e.currentTarget).data('filter');
+            this.loadTemplates(activeFilter);
             
             // Limpiar selección actual si cambia el filtro
             $('#orden_codigo_val').val('');
@@ -2571,6 +2682,7 @@ class App {
                                 li.find('a').on('click', function(evt) {
                                     evt.preventDefault();
                                     selectOrderSuggestion(item);
+                                    $dropdown.removeClass('show').empty();
                                 });
 
                                 li.data('item', item);
@@ -2666,6 +2778,47 @@ class App {
             $('#wrapper_orden_observaciones').removeClass('col-md-6').addClass('col-md-9');
 
             $('#orden_observaciones').val('').attr('placeholder', 'Indicaciones específicas para el paciente...');
+
+            // Liberación del modo edición
+            $('#orden_buscar').val('').prop('disabled', false).removeClass('bg-light');
+            $('#orden_filtros_pills button').removeClass('disabled pe-none opacity-50');
+            $('#orden_buscar_alert').remove();
+            $('#btn-cancelar-orden-edit').remove();
+            $('#btn-agregar-orden').html('<i class="bi bi-plus-circle me-1"></i>[+ Agregar Orden]');
+            
+            this.editingOrderIndex = null;
+            this.editingOrderBackup = null;
+        };
+
+        const resetMedicationsForm = () => {
+            $('#buscar_medicamento').val('');
+            $('#CODIGO_MEDICAMENTO').val('');
+            $('#DESCRIPCION_MEDICAMENTO').val('');
+            $('#CODIGO_DCI').val('');
+            $('#DESCRIPCION_DCI').val('');
+            $('#IUM_PRIMER_NIVEL').val('');
+            $('#DOSIS').val('');
+            $('#formula_frecuencia').val('');
+            $('#formula_duracion').val('');
+            $('#formula_posologia').val('');
+            $('#TIPO_TECNOLOGIA').val('');
+            $('#UM_DOSIS').val('');
+            $('#UM_FRECUENCIA').val('');
+            $('#CODIGO_VIA').val('');
+            $('#UM_DURACION').val('');
+            
+            // Clear new fields
+            $('#FORMULA_INSTRUCCION').val('');
+            $('#CODIGO_INSTRUCCION_MIPRES').val('');
+            $('#INSTRUCCION_MIPRES').val('');
+            $('#CODIGO_FORMA').val('');
+            $('#DESCRIPCION_FORMA').val('');
+            
+            // Clear edit state
+            $('#btn-cancelar-med-edit').remove();
+            $('#btn-agregar-medicamento').html('<i class="bi bi-plus-circle me-1"></i>[+ Agregar Medicamento]');
+            this.editingMedIndex = null;
+            this.editingMedBackup = null;
         };
 
         $(document).on('click', function(e) {
@@ -2774,14 +2927,18 @@ class App {
                 CNSCTVO_PCNTE: parseInt(cnsctvo_pcnte, 10)
             };
 
-            this.formHandler.ordersCart.push(orderObj);
+            if (this.editingOrderIndex !== null && this.editingOrderIndex !== undefined) {
+                this.formHandler.ordersCart.splice(this.editingOrderIndex, 0, orderObj);
+            } else {
+                this.formHandler.ordersCart.push(orderObj);
+            }
             updateCartUI();
 
             // Resetear formulario y dar foco al buscador
             resetOrdersForm();
             $('#orden_buscar').val('').focus();
 
-            this.ui.showToast('Orden médica agregada exitosamente.', 'success');
+            this.ui.showToast('Orden médica guardada exitosamente.', 'success');
         });
 
         $(document).on('change', '#orden_plantilla_select', function() {
@@ -2821,9 +2978,21 @@ class App {
         // Autocomplete asíncrono para buscar_medicamento con la tabla IUM
         let debounceTimer;
         $(document).on('input', '#buscar_medicamento', (e) => {
+            const self = this;
             clearTimeout(debounceTimer);
             const query = $(e.currentTarget).val().trim();
             const resultsDropdown = $('#resultados_ium');
+
+            if (query.length === 0) {
+                $('#CODIGO_MEDICAMENTO').val('');
+                $('#DESCRIPCION_MEDICAMENTO').val('');
+                $('#CODIGO_DCI').val('');
+                $('#DESCRIPCION_DCI').val('');
+                $('#IUM_PRIMER_NIVEL').val('');
+                $('#CODIGO_FORMA').val('');
+                $('#DESCRIPCION_FORMA').val('');
+                $('#FORMULA_INSTRUCCION').val('');
+            }
 
             if (query.length < 3) {
                 resultsDropdown.removeClass('show').empty();
@@ -2831,7 +3000,7 @@ class App {
             }
 
             debounceTimer = setTimeout(() => {
-                this.api.request(`getIUM.php?search=${encodeURIComponent(query)}`, 'GET')
+                self.api.request(`getIUM.php?search=${encodeURIComponent(query)}`, 'GET')
                     .then(res => {
                         resultsDropdown.empty();
                         if (res && res.status === 'success' && res.data && res.data.length > 0) {
@@ -2858,7 +3027,15 @@ class App {
                                     $('#CODIGO_MEDICAMENTO').val(item.code || 'GENERIC');
                                     $('#DESCRIPCION_MEDICAMENTO').val(comercial);
                                     $('#CODIGO_DCI').val(item.code || 'GENERIC');
-                                    $('#DESCRIPCION_DCI').val(dci);
+                                    $('#DESCRIPCION_DCI').val(item.dci || '');
+                                    $('#IUM_PRIMER_NIVEL').val(item.ium_primer_nivel || '');
+
+                                    // Rellenar nuevos campos de forma e instrucción
+                                    $('#CODIGO_FORMA').val(item.codigo_forma || '');
+                                    $('#DESCRIPCION_FORMA').val(item.descripcion_forma || '');
+                                    
+                                    // Rellenar instrucciones predeterminadas del IUM
+                                    $('#FORMULA_INSTRUCCION').val(item.instruccion || '');
                                     
                                     resultsDropdown.removeClass('show').empty();
                                     $('#DOSIS').focus();
@@ -2875,6 +3052,13 @@ class App {
                         resultsDropdown.removeClass('show').empty();
                     });
             }, 300);
+        });
+
+        // Escape key listener for buscar_medicamento
+        $(document).on('keydown', '#buscar_medicamento', (e) => {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                $('#resultados_ium').removeClass('show');
+            }
         });
 
         // Cerrar dropdown al hacer click fuera
@@ -2940,34 +3124,37 @@ class App {
                 posologia: $('#formula_posologia').val().trim(),
                 tipo_tecnologia: $('#TIPO_TECNOLOGIA').val(),
                 tipo_tecnologia_descripcion: $('#TIPO_TECNOLOGIA option:selected').text(),
+                // Nuevos campos
+                instruccion: $('#FORMULA_INSTRUCCION').val().trim(),
+                codigo_instruccion_mipres: $('#CODIGO_INSTRUCCION_MIPRES').val().trim(),
+                instruccion_mipres: ($('#INSTRUCCION_MIPRES').val() ? $('#INSTRUCCION_MIPRES option:selected').text().trim() : ''),
+                codigo_forma: $('#CODIGO_FORMA').val().trim(),
+                descripcion_forma: $('#DESCRIPCION_FORMA').val().trim(),
+                ium_primer_nivel: $('#IUM_PRIMER_NIVEL').val().trim(),
                 // Contexto clínico global (llaves exigidas en mayúsculas y minúsculas para compatibilidad)
                 ID_PCNTE: idPaciente,
                 CNSCTVO_PCNTE: parseInt(consecutivoPaciente, 10),
                 id_pcnte: idPaciente,
                 cnsctvo_pcnte: parseInt(consecutivoPaciente, 10),
                 formula: $('#formula_formula').val() || '',
-                cnsctvo_formula: carritoFormulas.length + 1,
+                cnsctvo_formula: (this.editingMedIndex !== null && this.editingMedIndex !== undefined) ? this.editingMedBackup.cnsctvo_formula : (carritoFormulas.length + 1),
                 id_mdco: $('#formula_id_mdco').val() || ''
             };
 
-            carritoFormulas.push(medObj);
+            if (this.editingMedIndex !== null && this.editingMedIndex !== undefined) {
+                // Reinsertar medicamento editado en su índice original
+                carritoFormulas.splice(this.editingMedIndex, 0, medObj);
+            } else {
+                carritoFormulas.push(medObj);
+            }
             updateCartUI();
 
-            // Clear inputs
-            $('#buscar_medicamento').val('');
-            $('#CODIGO_MEDICAMENTO').val('');
-            $('#DESCRIPCION_MEDICAMENTO').val('');
-            $('#CODIGO_DCI').val('');
-            $('#DESCRIPCION_DCI').val('');
-            $('#DOSIS').val('');
-            $('#formula_frecuencia').val('');
-            $('#formula_duracion').val('');
-            $('#formula_posologia').val('');
-            $('#TIPO_TECNOLOGIA').val('');
+            // Limpiar formulario y restablecer controles
+            resetMedicationsForm();
             
             // Return focus to buscador IUM
             $('#buscar_medicamento').focus();
-            this.ui.showToast('Medicamento agregado al carrito.', 'success');
+            this.ui.showToast('Medicamento guardado exitosamente en el carrito.', 'success');
         });
 
 
@@ -3024,6 +3211,10 @@ class App {
             const idx = $(e.currentTarget).data('idx');
             const med = this.formHandler.medicationsCart[idx];
             
+            // Respaldar índice y datos
+            this.editingMedIndex = idx;
+            this.editingMedBackup = { ...med };
+
             const displayTitle = med.descripcion_dci && med.descripcion_medicamento 
                 ? `${med.descripcion_dci} (${med.descripcion_medicamento})` 
                 : (med.descripcion_dci || med.descripcion_medicamento || '');
@@ -3042,6 +3233,15 @@ class App {
             $('#UM_DURACION').val(med.um_duracion);
             $('#formula_posologia').val(med.posologia);
             $('#TIPO_TECNOLOGIA').val(med.tipo_tecnologia || '');
+
+            // Rellenar nuevos campos
+            $('#FORMULA_INSTRUCCION').val(med.instruccion || '');
+            $('#CODIGO_INSTRUCCION_MIPRES').val(med.codigo_instruccion_mipres || '');
+            $('#INSTRUCCION_MIPRES').val(med.codigo_instruccion_mipres || '');
+            $('#CODIGO_FORMA').val(med.codigo_forma || '');
+            $('#DESCRIPCION_FORMA').val(med.descripcion_forma || '');
+            $('#IUM_PRIMER_NIVEL').val(med.ium_primer_nivel || '');
+
             // Hidden metadata fields
             $('#formula_id_pcnte').val(med.id_pcnte);
             $('#formula_cnsctvo_pcnte').val(med.cnsctvo_pcnte);
@@ -3049,28 +3249,104 @@ class App {
             $('#formula_cnsctvo_formula').val(med.cnsctvo_formula);
             $('#formula_id_mdco').val(med.id_mdco);
             
+            // Inyectar botón cancelar y cambiar texto de agregar
+            $('#btn-cancelar-med-edit').remove();
+            $('<button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2.5 fs-8 me-2" id="btn-cancelar-med-edit"><i class="bi bi-x-circle me-1"></i>Cancelar</button>').insertBefore('#btn-agregar-medicamento');
+            $('#btn-agregar-medicamento').html('<i class="bi bi-check-circle me-1"></i>Guardar Cambios');
+
             this.formHandler.medicationsCart.splice(idx, 1);
             updateCartUI();
             this.ui.showToast('Cargado en formulario para edición.', 'info');
         }.bind(this));
 
+        // Manejador del botón cancelar edición de medicamento
+        $(document).on('click', '#btn-cancelar-med-edit', (e) => {
+            e.preventDefault();
+            if (this.editingMedIndex !== null && this.editingMedIndex !== undefined && this.editingMedBackup) {
+                // Reinsertar el medicamento original a su posición
+                this.formHandler.medicationsCart.splice(this.editingMedIndex, 0, this.editingMedBackup);
+            }
+            resetMedicationsForm();
+            updateCartUI();
+            this.ui.showToast('Edición de medicamento cancelada.', 'info');
+        });
+
+        $(document).on('change', '#INSTRUCCION_MIPRES', function() {
+            const val = $(this).val();
+            $('#CODIGO_INSTRUCCION_MIPRES').val(val || '');
+        });
+
+
+
         $(document).on('click', '.btn-edit-cart-order', function(e) {
             const idx = $(e.currentTarget).data('idx');
             const order = this.formHandler.ordersCart[idx];
             
-            $('#orden_categoria_fhir').val(order.categoria_fhir).trigger('change');
-            $('#orden_codigo').val(order.codigo);
-            $('#orden_nombre').val(order.nombre);
+            // Guardar índice y respaldo para restauración en caso de cancelación
+            this.editingOrderIndex = idx;
+            this.editingOrderBackup = { ...order };
+
+            // Cargar en los inputs visibles y ocultos correctos del formulario
+            $('#orden_buscar').val(`📋 Orden: [${order.codigo}] - ${order.nombre} (No modificable)`).prop('disabled', true).addClass('bg-light');
+            $('#orden_codigo_val').val(order.codigo);
+            $('#orden_nombre_val').val(order.nombre);
+            $('#orden_categoria_fhir_val').val(order.categoria_fhir);
+            $('#orden_tipo_tecnologia_val').val(order.tipo_tecnologia || '');
+            $('#orden_tipo_tecnologia_descripcion_val').val(order.tipo_tecnologia_descripcion || '');
+            $('#orden_tipo_examen_val').val(order.tipo_examen || '');
             $('#orden_cantidad').val(order.cantidad);
-            $('#orden_observaciones').val(order.observaciones);
-            $('#orden_tipo_tecnologia').val(order.tipo_tecnologia || '');
-            $('#orden_tipo_tecnologia_descripcion').val(order.tipo_tecnologia_descripcion || '');
-            $('#orden_tipo_examen').val(order.tipo_examen || '');
+
+            // Bloquear filtros rápidos y píldoras
+            $('#orden_filtros_pills button').addClass('disabled pe-none opacity-50');
+
+            // Mostrar contenedor estático e informativo de Solo Lectura
+            $('#orden_buscar_alert').remove();
+            $('<div id="orden_buscar_alert" class="alert alert-warning py-1.5 px-2.5 my-1.5 fs-8.5 d-flex align-items-center gap-1.5" style="border-radius:6px;"><i class="bi bi-lock-fill text-warning me-1"></i><span><strong>Modo Edición Activo:</strong> La tecnología de salud no puede modificarse. Edite cantidad u observaciones, luego guarde cambios.</span></div>').insertAfter('#orden_buscar').hide().fadeIn(200);
+
+            // Ajustar estado de lectura del input de cantidad
+            if (order.categoria_fhir === 'procedure') {
+                $('#orden_cantidad').prop('readonly', true).prop('disabled', true).removeClass('border-primary');
+                $('#orden_cantidad_help').text("Cantidad fija para procedimientos estándar");
+            } else {
+                $('#orden_cantidad').prop('readonly', false).prop('disabled', false).prop('required', true).addClass('border-primary');
+                $('#orden_cantidad_help').text("Define el número de unidades requeridas para este insumo/tecnología");
+            }
+
+            // Detectar y aislar la frecuencia de las observaciones
+            const freqMatch = order.observaciones ? order.observaciones.match(/^Frecuencia:\s*([^.]+)\./) : null;
+            if (freqMatch) {
+                $('#group_orden_frecuencia').removeClass('d-none');
+                $('#orden_frecuencia').val(freqMatch[1].trim()).prop('required', true);
+                $('#wrapper_orden_observaciones').removeClass('col-md-9').addClass('col-md-6');
+                $('#orden_observaciones').val(order.observaciones.replace(/^Frecuencia:\s*[^.]+\.\s*/, ''));
+            } else {
+                $('#group_orden_frecuencia').addClass('d-none');
+                $('#orden_frecuencia').val('').prop('required', false);
+                $('#wrapper_orden_observaciones').removeClass('col-md-6').addClass('col-md-9');
+                $('#orden_observaciones').val(order.observaciones || '');
+            }
+
+            // Cambiar botones de acción
+            $('#btn-cancelar-orden-edit').remove();
+            $('<button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2.5 fs-8 me-2" id="btn-cancelar-orden-edit"><i class="bi bi-x-circle me-1"></i>Cancelar</button>').insertBefore('#btn-agregar-orden');
+            $('#btn-agregar-orden').html('<i class="bi bi-check-circle me-1"></i>Guardar Cambios');
 
             this.formHandler.ordersCart.splice(idx, 1);
             updateCartUI();
             this.ui.showToast('Cargada en formulario para edición.', 'info');
         }.bind(this));
+
+        // Manejador del botón cancelar edición
+        $(document).on('click', '#btn-cancelar-orden-edit', (e) => {
+            e.preventDefault();
+            if (this.editingOrderIndex !== null && this.editingOrderIndex !== undefined && this.editingOrderBackup) {
+                // Devolver el item original a su posición
+                this.formHandler.ordersCart.splice(this.editingOrderIndex, 0, this.editingOrderBackup);
+            }
+            resetOrdersForm();
+            updateCartUI();
+            this.ui.showToast('Edición cancelada. El ítem volvió al carrito.', 'info');
+        });
 
         $(document).on('click', '.btn-edit-cart-incap', function(e) {
             const idx = $(e.currentTarget).data('idx');
@@ -3555,6 +3831,6 @@ class App {
 
 // Inicializar el portal al estar listo el DOM
 $(document).ready(() => {
-    const portal = new App();
-    portal.init();
+    window.portal = new App();
+    window.portal.init();
 });

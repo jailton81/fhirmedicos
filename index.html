@@ -817,6 +817,7 @@
                                                                                             <input type="hidden" id="DESCRIPCION_MEDICAMENTO">
                                                                                             <input type="hidden" id="CODIGO_DCI">
                                                                                             <input type="hidden" id="DESCRIPCION_DCI">
+                                                                                            <input type="hidden" id="IUM_PRIMER_NIVEL">
                                                                                         </div>
                                                                                     </div>
                                                                                     
@@ -849,23 +850,52 @@
                                                                                             <option value="" selected disabled>Cargando vías...</option>
                                                                                         </select>
                                                                                     </div>
-
+ 
                                                                                     <div class="col-6 col-sm-3">
                                                                                         <label class="form-label fs-9 mb-0.5 text-secondary" for="formula_duracion">Duración</label>
                                                                                         <input type="number" class="form-control py-1 px-2 fs-8" id="formula_duracion" placeholder="Cant.">
                                                                                     </div>
-                                                                                    <div class="col-12 col-sm-6">
+                                                                                    <div class="col-6 col-sm-3">
                                                                                         <label class="form-label fs-9 mb-0.5 text-secondary" for="UM_DURACION">U.M. Duración</label>
                                                                                         <select class="form-select py-1 px-2 fs-8" id="UM_DURACION" name="UM_DURACION">
                                                                                             <option value="" selected disabled>Cargando unidades...</option>
                                                                                         </select>
                                                                                     </div>
                                                                                     
-                                                                                    <div class="col-md-6 col-12">
+                                                                                    <div class="col-6 col-sm-3">
                                                                                         <label class="form-label fs-9 mb-0.5 text-secondary" for="TIPO_TECNOLOGIA">Tipo Tecnología</label>
                                                                                         <select class="form-select form-select-sm py-1 px-2 fs-8" id="TIPO_TECNOLOGIA" name="TIPO_TECNOLOGIA">
                                                                                             <option value="" selected disabled>Cargando tecnologías...</option>
                                                                                         </select>
+                                                                                    </div>
+ 
+                                                                                    <!-- Forma Farmacéutica -->
+                                                                                    <div class="col-md-3 col-6">
+                                                                                        <label class="form-label fs-9 mb-0.5 text-secondary" for="CODIGO_FORMA">Código Forma</label>
+                                                                                        <input type="text" class="form-control py-1 px-2 fs-8 bg-light" id="CODIGO_FORMA" readonly placeholder="Autocompletado">
+                                                                                    </div>
+                                                                                    <div class="col-md-9 col-6">
+                                                                                        <label class="form-label fs-9 mb-0.5 text-secondary" for="DESCRIPCION_FORMA">Descripción Forma</label>
+                                                                                        <input type="text" class="form-control py-1 px-2 fs-8" id="DESCRIPCION_FORMA" placeholder="Ej. Tabletas, Cápsula, Solución oral">
+                                                                                    </div>
+
+                                                                                    <!-- Bloque Normativo MiPres -->
+                                                                                    <div class="col-12">
+                                                                                        <div class="p-2 border rounded bg-light-subtle my-1">
+                                                                                            <span class="fs-9.5 text-secondary fw-semibold d-block mb-1.5"><i class="bi bi-shield-check text-primary me-1"></i>Bloque Normativo MiPres</span>
+                                                                                            <div class="row g-2">
+                                                                                                <div class="col-md-4 col-12">
+                                                                                                    <label class="form-label fs-9 mb-0.5 text-secondary" for="CODIGO_INSTRUCCION_MIPRES">Cód. Instrucción MiPres</label>
+                                                                                                    <input type="text" class="form-control py-1 px-2 fs-8 bg-light" id="CODIGO_INSTRUCCION_MIPRES" placeholder="Autocompletado" readonly>
+                                                                                                </div>
+                                                                                                <div class="col-md-8 col-12">
+                                                                                                    <label class="form-label fs-9 mb-0.5 text-secondary" for="INSTRUCCION_MIPRES">Instrucción MiPres</label>
+                                                                                                    <select class="form-select py-1 px-2 fs-8" id="INSTRUCCION_MIPRES">
+                                                                                                        <option value="" selected disabled>Cargando instrucciones...</option>
+                                                                                                    </select>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
                                                                                     </div>
 
                                                                                     <!-- Hidden/Transparent fields -->
@@ -874,10 +904,16 @@
                                                                                     <input type="hidden" id="formula_formula">
                                                                                     <input type="hidden" id="formula_cnsctvo_formula">
                                                                                     <input type="hidden" id="formula_id_mdco">
-
+ 
                                                                                     <div class="col-12">
                                                                                         <label class="form-label fs-9 mb-0.5 text-secondary" for="formula_posologia">Posología (Instrucciones adicionales)</label>
                                                                                         <input type="text" class="form-control py-1 px-2 fs-8" id="formula_posologia" placeholder="Ej. Tomar en ayunas con abundante agua.">
+                                                                                    </div>
+
+                                                                                    <!-- Indicaciones Generales (Paciente) -->
+                                                                                    <div class="col-12">
+                                                                                        <label class="form-label fs-9 mb-0.5 text-secondary" for="FORMULA_INSTRUCCION">Indicaciones Generales para el Paciente</label>
+                                                                                        <textarea class="form-control py-1 px-2 fs-8" id="FORMULA_INSTRUCCION" rows="2" placeholder="Describa de forma clara las indicaciones de administración, cuidados o advertencias para el paciente..."></textarea>
                                                                                     </div>
                                                                                 </div>
                                                                                 <div class="mt-3 text-end">
@@ -904,10 +940,6 @@
                                                                                         <label class="form-label fs-9 mb-0.5 text-secondary" for="orden_plantilla_select">Cargar Plantilla Predefinida</label>
                                                                                         <select class="form-select py-1 px-2 fs-8" id="orden_plantilla_select">
                                                                                             <option value="" selected>-- Seleccionar una plantilla --</option>
-                                                                                            <option value="ecg">Procedimiento: Electrocardiograma de ritmo (ECG)</option>
-                                                                                            <option value="hemograma">Procedimiento: Hemograma completo</option>
-                                                                                            <option value="oxigeno">Tecnología: Cánula de Oxígeno Nasal</option>
-                                                                                            <option value="foley">Tecnología: Sonda Foley 16 Fr</option>
                                                                                         </select>
                                                                                     </div>
 
