@@ -2813,6 +2813,8 @@ class App {
             $('#INSTRUCCION_MIPRES').val('');
             $('#CODIGO_FORMA').val('');
             $('#DESCRIPCION_FORMA').val('');
+            $('#descripcion_forma_input').val('').removeClass('d-none');
+            $('#descripcion_forma_select').addClass('d-none').val('');
             
             // Clear edit state
             $('#btn-cancelar-med-edit').remove();
@@ -3025,14 +3027,43 @@ class App {
                                     }
                                     
                                     $('#CODIGO_MEDICAMENTO').val(item.code || 'GENERIC');
-                                    $('#DESCRIPCION_MEDICAMENTO').val(comercial);
+                                    $('#DESCRIPCION_MEDICAMENTO').val(item.display || optionText);
                                     $('#CODIGO_DCI').val(item.code || 'GENERIC');
                                     $('#DESCRIPCION_DCI').val(item.dci || '');
                                     $('#IUM_PRIMER_NIVEL').val(item.ium_primer_nivel || '');
 
                                     // Rellenar nuevos campos de forma e instrucción
                                     $('#CODIGO_FORMA').val(item.codigo_forma || '');
-                                    $('#DESCRIPCION_FORMA').val(item.descripcion_forma || '');
+                                    
+                                    const formDesc = (item.descripcion_forma || '').trim();
+                                    if (formDesc) {
+                                        $('#descripcion_forma_input').val(formDesc).removeClass('d-none');
+                                        $('#descripcion_forma_select').addClass('d-none');
+                                        $('#DESCRIPCION_FORMA').val(formDesc);
+                                    } else {
+                                        $('#descripcion_forma_input').addClass('d-none').val('');
+                                        $('#descripcion_forma_select').removeClass('d-none').val('');
+                                        $('#DESCRIPCION_FORMA').val('');
+                                        
+                                        const $select = $('#descripcion_forma_select');
+                                        if ($select.children('option').length <= 1) {
+                                            $select.html('<option value="">Cargando formas...</option>');
+                                            self.api.request('getEstados.php?status=MipresDoseForm', 'GET')
+                                                .then(res => {
+                                                    $select.empty();
+                                                    $select.append(new Option('-- Seleccione Forma Farmacéutica Mipres --', ''));
+                                                    if (res && res.status === 'success' && res.data) {
+                                                        res.data.forEach(x => {
+                                                            $select.append(new Option(x.display, x.code));
+                                                        });
+                                                    }
+                                                })
+                                                .catch(err => {
+                                                    console.error("Error cargando formas farmacéuticas:", err);
+                                                    $select.html('<option value="">Error al cargar formas</option>');
+                                                });
+                                        }
+                                    }
                                     
                                     // Rellenar instrucciones predeterminadas del IUM
                                     $('#FORMULA_INSTRUCCION').val(item.instruccion || '');
@@ -3240,6 +3271,37 @@ class App {
             $('#INSTRUCCION_MIPRES').val(med.codigo_instruccion_mipres || '');
             $('#CODIGO_FORMA').val(med.codigo_forma || '');
             $('#DESCRIPCION_FORMA').val(med.descripcion_forma || '');
+
+            const showSelectForma = !(med.descripcion_forma || '').trim();
+            if (showSelectForma) {
+                $('#descripcion_forma_input').addClass('d-none').val('');
+                $('#descripcion_forma_select').removeClass('d-none');
+                
+                const $select = $('#descripcion_forma_select');
+                const setSelectVal = () => { $select.val(med.codigo_forma || ''); };
+                if ($select.children('option').length <= 1) {
+                    $select.html('<option value="">Cargando formas...</option>');
+                    this.api.request('getEstados.php?status=MipresDoseForm', 'GET')
+                        .then(res => {
+                            $select.empty();
+                            $select.append(new Option('-- Seleccione Forma Farmacéutica Mipres --', ''));
+                            if (res && res.status === 'success' && res.data) {
+                                res.data.forEach(x => {
+                                    $select.append(new Option(x.display, x.code));
+                                });
+                            }
+                            setSelectVal();
+                        })
+                        .catch(err => {
+                            console.error("Error cargando formas farmacéuticas:", err);
+                        });
+                } else {
+                    setSelectVal();
+                }
+            } else {
+                $('#descripcion_forma_input').val(med.descripcion_forma).removeClass('d-none');
+                $('#descripcion_forma_select').addClass('d-none');
+            }
             $('#IUM_PRIMER_NIVEL').val(med.ium_primer_nivel || '');
 
             // Hidden metadata fields
@@ -3274,6 +3336,14 @@ class App {
         $(document).on('change', '#INSTRUCCION_MIPRES', function() {
             const val = $(this).val();
             $('#CODIGO_INSTRUCCION_MIPRES').val(val || '');
+        });
+
+        $(document).on('change', '#descripcion_forma_select', function() {
+            const code = $(this).val();
+            const desc = code ? $(this).find('option:selected').text().trim() : '';
+            $('#CODIGO_FORMA').val(code || '');
+            // update hidden field representing active description value
+            $('#DESCRIPCION_FORMA').val(desc || '');
         });
 
 

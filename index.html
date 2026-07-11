@@ -875,8 +875,17 @@
                                                                                         <input type="text" class="form-control py-1 px-2 fs-8 bg-light" id="CODIGO_FORMA" readonly placeholder="Autocompletado">
                                                                                     </div>
                                                                                     <div class="col-md-9 col-6">
-                                                                                        <label class="form-label fs-9 mb-0.5 text-secondary" for="DESCRIPCION_FORMA">Descripción Forma</label>
-                                                                                        <input type="text" class="form-control py-1 px-2 fs-8" id="DESCRIPCION_FORMA" placeholder="Ej. Tabletas, Cápsula, Solución oral">
+                                                                                        <label class="form-label fs-9 mb-0.5 text-secondary" for="descripcion_forma_input">Descripción Forma</label>
+                                                                                        <!-- Opción A: Solo lectura (Visible por defecto) -->
+                                                                                        <input type="text" class="form-control py-1 px-2 fs-8 bg-light" id="descripcion_forma_input" readonly placeholder="Autocompletado">
+                                                                                        
+                                                                                        <!-- Opción B: Dropdown para selección manual (Oculto por defecto) -->
+                                                                                        <select class="form-select py-1 px-2 fs-8 d-none" id="descripcion_forma_select">
+                                                                                            <option value="">-- Seleccione Forma Farmacéutica Mipres --</option>
+                                                                                        </select>
+                                                                                        
+                                                                                        <!-- Input oculto para compatibilidad de persistencia -->
+                                                                                        <input type="hidden" id="DESCRIPCION_FORMA">
                                                                                     </div>
 
                                                                                     <!-- Bloque Normativo MiPres -->
